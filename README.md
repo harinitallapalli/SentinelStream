@@ -2,79 +2,328 @@
 
 ## Overview
 
-SentinelStream is a small FastAPI service for managing users and transactions with a basic fraud check.
+SentinelStream is a fraud detection and transaction monitoring platform built using FastAPI, PostgreSQL, and SQLAlchemy. The system allows users to create and manage transactions, automatically detects suspicious activities using fraud detection rules, generates fraud alerts, and provides dashboard analytics for monitoring system activity.
+
+The project demonstrates backend development concepts including REST APIs, asynchronous database operations, fraud detection workflows, analytics endpoints, and PostgreSQL integration.
+
+---
 
 ## Features
 
-- Create and list users
-- Create and list transactions
-- Simple fraud detection based on transaction amount
-- Async SQLAlchemy database access
+### User Management
+
+* Create users
+* View all users
+
+### Transaction Management
+
+* Create transactions
+* View all transactions
+* Store transaction amount, location, and fraud status
+
+### Fraud Detection Engine
+
+Transactions are automatically analyzed based on predefined fraud rules:
+
+* Transactions above a threshold amount are flagged
+* Suspicious locations are flagged
+* Transactions are categorized as:
+
+  * SAFE
+  * FRAUD
+  * HIGH_RISK
+
+### Fraud Alerts
+
+* Automatically generates alerts for suspicious transactions
+* View all fraud alerts through API
+
+### Analytics & Dashboard
+
+* Total transactions
+* Fraud transactions
+* Safe transactions
+* Fraud rate percentage
+* Total amount processed
+* Dashboard summary metrics
+
+---
+
+## Tech Stack
+
+### Backend
+
+* FastAPI
+* Python 3.13
+
+### Database
+
+* PostgreSQL
+* SQLAlchemy (Async ORM)
+* AsyncPG
+
+### Tools
+
+* Swagger UI
+* Uvicorn
+* Git & GitHub
+* dotenv
+
+---
+
+## Project Structure
+
+```text
+app/
+├── api/
+│   ├── user.py
+│   ├── transaction.py
+│   ├── alert.py
+│   ├── stats.py
+│   └── dashboard.py
+│
+├── database/
+│   ├── db.py
+│   └── create_tables.py
+│
+├── models/
+│   ├── user.py
+│   ├── transaction.py
+│   └── fraud_alert.py
+│
+├── schemas/
+│   ├── user.py
+│   └── transaction.py
+│
+├── services/
+│   └── fraud_service.py
+│
+└── main.py
+```
+
+---
 
 ## Requirements
 
-- Python 3.11 or later
-- A supported async database driver such as `asyncpg`
-- Database configured using `DATABASE_URL`
+* Python 3.11+
+* PostgreSQL
+* Git
 
-## Setup
+---
 
-1. Create and activate a virtual environment:
+## Installation
+
+### Clone Repository
+
+```bash
+git clone https://github.com/harinitallapalli/SentinelStream.git
+cd SentinelStream
+```
+
+### Create Virtual Environment
 
 ```bash
 python -m venv venv
-venv\Scripts\Activate.ps1
 ```
 
-2. Install dependencies:
+### Activate Virtual Environment
+
+Windows:
+
+```bash
+venv\Scripts\activate
+```
+
+### Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Create a `.env` file in the project root with the database URL:
+---
+
+## Environment Variables
+
+Create a `.env` file in the project root:
 
 ```env
-DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/sentinelstream
+DATABASE_URL=postgresql+asyncpg://postgres:your_password@localhost:5432/SentinelStream
 ```
 
-4. Create database tables:
+---
+
+## Database Setup
+
+Create database tables:
 
 ```bash
 python -m app.database.create_tables
 ```
 
-## Run the application
+---
+
+## Running the Application
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-The API will be available at `http://127.0.0.1:8000`.
+Application URL:
+
+```text
+http://127.0.0.1:8000
+```
+
+Swagger Documentation:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+---
 
 ## API Endpoints
 
 ### Users
 
-- `POST /users/`
-  - Request body: `{ "name": "Alice", "email": "alice@example.com" }`
-  - Creates a new user.
+#### Create User
 
-- `GET /users/`
-  - Returns a list of users.
+```http
+POST /users/
+```
+
+Example:
+
+```json
+{
+  "name": "Harini",
+  "email": "harini@gmail.com"
+}
+```
+
+#### Get Users
+
+```http
+GET /users/
+```
+
+---
 
 ### Transactions
 
-- `POST /transactions/`
-  - Request body: `{ "user_id": 1, "amount": 12000.0, "location": "New York" }`
-  - Creates a transaction and checks fraud status.
+#### Create Transaction
 
-- `GET /transactions/`
-  - Returns a list of transactions.
+```http
+POST /transactions/
+```
 
-## Notes
+Example:
 
-- `app/api/transaction.py` uses a simple fraud rule: amounts above 10,000 are marked as `FRAUD`.
-- The app currently returns simple response messages for creation endpoints.
-- For production, ensure your database URL and credentials are secured.
+```json
+{
+  "user_id": 1,
+  "amount": 50000,
+  "location": "Hyderabad"
+}
+```
 
+#### Get Transactions
+
+```http
+GET /transactions/
+```
+
+---
+
+### Fraud Alerts
+
+#### Get Fraud Alerts
+
+```http
+GET /alerts/
+```
+
+---
+
+### Statistics
+
+#### Get System Statistics
+
+```http
+GET /stats/
+```
+
+Example Response:
+
+```json
+{
+  "total_transactions": 10,
+  "fraud_transactions": 3,
+  "safe_transactions": 7,
+  "fraud_rate": "30.0%",
+  "total_amount_processed": 125000
+}
+```
+
+---
+
+### Dashboard
+
+#### Get Dashboard Summary
+
+```http
+GET /dashboard/
+```
+
+Example Response:
+
+```json
+{
+  "total_users": 5,
+  "total_transactions": 20,
+  "fraud_alerts": 4,
+  "fraud_rate": "20.0%"
+}
+```
+
+---
+
+## Fraud Detection Logic
+
+Current fraud rules:
+
+* Amount greater than 10,000 → FRAUD
+* Amount greater than 50,000 → HIGH_RISK
+* Suspicious locations:
+
+  * Unknown
+  * Foreign
+  * DarkWeb
+
+Example:
+
+```python
+def check_fraud(amount, location):
+    ...
+```
+
+---
+
+## Future Enhancements
+
+* Frontend Dashboard (React)
+* Data Visualization Charts
+* User Authentication
+* Redis Integration
+* Celery Background Jobs
+* Email Notifications
+* Machine Learning Fraud Detection
+* Real-time Monitoring
+
+---
+
+## Author
+
+Harini Tallapalli
+
+Built as a learning project for fraud detection, backend development, and financial transaction monitoring using FastAPI and PostgreSQL
