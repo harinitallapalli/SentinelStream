@@ -55,3 +55,22 @@ async def get_transactions(
     transactions = result.scalars().all()
 
     return transactions
+
+
+@router.get("/fraud")
+async def get_fraud_transactions(
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(
+        select(Transaction)
+    )
+
+    transactions = result.scalars().all()
+
+    fraud_transactions = [
+        transaction
+        for transaction in transactions
+        if transaction.status in ["FRAUD", "HIGH_RISK"]
+    ]
+
+    return fraud_transactions

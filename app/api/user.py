@@ -5,6 +5,7 @@ from sqlalchemy import select
 from app.database.session import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate
+from app.models.transaction import Transaction
 
 router = APIRouter()
 
@@ -36,3 +37,17 @@ async def get_users(
     users = result.scalars().all()
 
     return users
+@router.get("/{user_id}/transactions")
+async def get_user_transactions(
+    user_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(
+        select(Transaction).where(
+            Transaction.user_id == user_id
+        )
+    )
+
+    transactions = result.scalars().all()
+
+    return transactions
