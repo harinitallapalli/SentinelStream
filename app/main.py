@@ -4,8 +4,17 @@ from app.api.transaction import router as transaction_router
 from app.api.alert import router as alert_router
 from app.api.stats import router as stats_router
 from app.api.dashboard import router as dashboard_router
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="SentinelStream")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(
     user_router,
