@@ -1,329 +1,159 @@
-# SentinelStream
+# SentinelStream – Real-Time Fraud Detection Dashboard
 
 ## Overview
 
-SentinelStream is a fraud detection and transaction monitoring platform built using FastAPI, PostgreSQL, and SQLAlchemy. The system allows users to create and manage transactions, automatically detects suspicious activities using fraud detection rules, generates fraud alerts, and provides dashboard analytics for monitoring system activity.
-
-The project demonstrates backend development concepts including REST APIs, asynchronous database operations, fraud detection workflows, analytics endpoints, and PostgreSQL integration.
-
----
+SentinelStream is a full-stack fraud detection and transaction monitoring platform built using FastAPI, PostgreSQL, SQLAlchemy, React, and Recharts. The system analyzes transactions in real time, classifies them into risk categories, generates fraud alerts, and visualizes analytics through an interactive dashboard.
 
 ## Features
 
-### User Management
+### Backend
 
-* Create users
-* View all users
-
-### Transaction Management
-
-* Create transactions
-* View all transactions
-* Store transaction amount, location, and fraud status
+* User Management APIs
+* Transaction Management APIs
+* Fraud Alert APIs
+* Statistics APIs
+* Async SQLAlchemy Integration
+* PostgreSQL Database
 
 ### Fraud Detection Engine
 
-Transactions are automatically analyzed based on predefined fraud rules:
+* SAFE Classification
+* FRAUD Classification
+* HIGH_RISK Classification
+* Automatic Fraud Alert Generation
 
-* Transactions above a threshold amount are flagged
-* Suspicious locations are flagged
-* Transactions are categorized as:
+### Frontend Dashboard
 
-  * SAFE
-  * FRAUD
-  * HIGH_RISK
-
-### Fraud Alerts
-
-* Automatically generates alerts for suspicious transactions
-* View all fraud alerts through API
-
-### Analytics & Dashboard
-
-* Total transactions
-* Fraud transactions
-* Safe transactions
-* Fraud rate percentage
-* Total amount processed
-* Dashboard summary metrics
-
----
+* Dashboard Summary Cards
+* Interactive Pie Chart
+* Interactive Bar Chart
+* Transaction Creation Form
+* Transactions Table
+* Fraud Alerts Table
+* Search Functionality
+* Transaction Status Filtering
 
 ## Tech Stack
 
 ### Backend
 
 * FastAPI
-* Python 3.13
-
-### Database
-
+* SQLAlchemy
 * PostgreSQL
-* SQLAlchemy (Async ORM)
-* AsyncPG
-
-### Tools
-
-* Swagger UI
+* Pydantic
 * Uvicorn
-* Git & GitHub
-* dotenv
 
----
+### Frontend
 
-## Project Structure
+* React
+* Vite
+* Axios
+* Recharts
+* Tailwind CSS
 
-```text
-app/
-├── api/
-│   ├── user.py
-│   ├── transaction.py
-│   ├── alert.py
-│   ├── stats.py
-│   └── dashboard.py
-│
-├── database/
-│   ├── db.py
-│   └── create_tables.py
-│
-├── models/
-│   ├── user.py
-│   ├── transaction.py
-│   └── fraud_alert.py
-│
-├── schemas/
-│   ├── user.py
-│   └── transaction.py
-│
-├── services/
-│   └── fraud_service.py
-│
-└── main.py
-```
+## System Architecture
 
----
+User → React Dashboard → FastAPI APIs → PostgreSQL Database
 
-## Requirements
+Transactions are analyzed by the Fraud Detection Engine before being stored. Suspicious transactions automatically generate fraud alerts and update dashboard analytics.
 
-* Python 3.11+
-* PostgreSQL
-* Git
+## Risk Classification Rules
 
----
+SAFE:
 
-## Installation
+* Transaction amount ≤ ₹10,000
 
-### Clone Repository
+FRAUD:
 
-```bash
-git clone https://github.com/harinitallapalli/SentinelStream.git
-cd SentinelStream
-```
+* Transaction amount > ₹10,000
+* Suspicious location detected
 
-### Create Virtual Environment
+HIGH_RISK:
 
-```bash
-python -m venv venv
-```
-
-### Activate Virtual Environment
-
-Windows:
-
-```bash
-venv\Scripts\activate
-```
-
-### Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-## Environment Variables
-
-Create a `.env` file in the project root:
-
-```env
-DATABASE_URL=postgresql+asyncpg://postgres:your_password@localhost:5432/SentinelStream
-```
-
----
-
-## Database Setup
-
-Create database tables:
-
-```bash
-python -m app.database.create_tables
-```
-
----
-
-## Running the Application
-
-```bash
-uvicorn app.main:app --reload
-```
-
-Application URL:
-
-```text
-http://127.0.0.1:8000
-```
-
-Swagger Documentation:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
----
+* Transaction amount > ₹50,000
 
 ## API Endpoints
 
 ### Users
 
-#### Create User
-
-```http
 POST /users/
-```
 
-Example:
+* Create User
 
-```json
-{
-  "name": "Harini",
-  "email": "harini@gmail.com"
-}
-```
-
-#### Get Users
-
-```http
 GET /users/
-```
 
----
+* List Users
 
 ### Transactions
 
-#### Create Transaction
-
-```http
 POST /transactions/
-```
 
-Example:
+* Create Transaction
 
-```json
-{
-  "user_id": 1,
-  "amount": 50000,
-  "location": "Hyderabad"
-}
-```
-
-#### Get Transactions
-
-```http
 GET /transactions/
-```
 
----
+* List Transactions
 
 ### Fraud Alerts
 
-#### Get Fraud Alerts
-
-```http
 GET /alerts/
-```
 
----
+* List Fraud Alerts
 
 ### Statistics
 
-#### Get System Statistics
-
-```http
 GET /stats/
-```
 
-Example Response:
+* Dashboard Analytics
 
-```json
-{
-  "total_transactions": 10,
-  "fraud_transactions": 3,
-  "safe_transactions": 7,
-  "fraud_rate": "30.0%",
-  "total_amount_processed": 125000
-}
-```
+## Dashboard Features
 
----
+* Total Transactions
+* Safe Transactions
+* Fraud Transactions
+* High Risk Transactions
+* Fraud Rate Calculation
+* Risk Distribution Visualization
+* Transaction Monitoring
+* Fraud Alert Monitoring
 
-### Dashboard
+## Installation
 
-#### Get Dashboard Summary
+Clone Repository
 
-```http
-GET /dashboard/
-```
+git clone <repository-url>
 
-Example Response:
+Backend Setup
 
-```json
-{
-  "total_users": 5,
-  "total_transactions": 20,
-  "fraud_alerts": 4,
-  "fraud_rate": "20.0%"
-}
-```
+python -m venv venv
 
----
+venv\Scripts\activate
 
-## Fraud Detection Logic
+pip install -r requirements.txt
 
-Current fraud rules:
+Run Backend
 
-* Amount greater than 10,000 → FRAUD
-* Amount greater than 50,000 → HIGH_RISK
-* Suspicious locations:
+uvicorn app.main:app --reload
 
-  * Unknown
-  * Foreign
-  * DarkWeb
+Frontend Setup
 
-Example:
+cd sentinelstream-frontend
 
-```python
-def check_fraud(amount, location):
-    ...
-```
+npm install
 
----
+npm run dev
 
 ## Future Enhancements
 
-* Frontend Dashboard (React)
-* Data Visualization Charts
-* User Authentication
-* Redis Integration
-* Celery Background Jobs
+* CSV Export
+* PDF Reports
+* JWT Authentication
+* Role-Based Access Control
 * Email Notifications
 * Machine Learning Fraud Detection
-* Real-time Monitoring
-
----
+* Docker Deployment
+* AWS Cloud Deployment
 
 ## Author
 
 Harini Tallapalli
-
-Built as a learning project for fraud detection, backend development, and financial transaction monitoring using FastAPI and PostgreSQL
