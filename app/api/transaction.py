@@ -32,7 +32,7 @@ async def create_transaction(
     await db.commit()
     await db.refresh(new_transaction)
 
-    if status == "FRAUD":
+    if status in ["FRAUD", "HIGH_RISK"]:
         alert = FraudAlert(
             transaction_id=new_transaction.id,
             reason="Suspicious Transaction"
