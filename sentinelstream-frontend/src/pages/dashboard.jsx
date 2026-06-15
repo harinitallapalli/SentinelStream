@@ -14,7 +14,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-function App() {
+function Dashboard() {
   const [stats, setStats] = useState({});
   const [transactions, setTransactions] = useState([]);
   const [alerts, setAlerts] = useState([]);
@@ -73,9 +73,15 @@ function App() {
 
       alert("Transaction Created Successfully");
     } catch (error) {
-      console.error(error);
-      alert("Failed to create transaction");
-    }
+  console.log(error.response?.data);
+  console.log(error);
+
+  alert(
+    JSON.stringify(
+      error.response?.data || "Transaction Failed"
+    )
+  );
+}
   };
 
   const pieData = [
@@ -407,5 +413,4 @@ function App() {
     </div>
   );
 }
-
-export default App;
+export default Dashboard ;
