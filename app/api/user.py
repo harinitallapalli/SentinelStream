@@ -48,6 +48,7 @@ async def get_user_transactions(
         )
     )
 
+
     transactions = result.scalars().all()
 
     return transactions

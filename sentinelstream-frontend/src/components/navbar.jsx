@@ -1,10 +1,45 @@
+﻿import { useEffect, useState } from "react";
+
 function Navbar() {
+  const [currentTime, setCurrentTime] = useState("");
+
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      setCurrentTime(
+        now.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      );
+    };
+
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const today = new Date().toLocaleDateString([], {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+
   return (
     <div className="navbar">
-      <h1>Fraud Detection Dashboard</h1>
+      <div className="navbar-brand">
+        <div className="navbar-title">SentinelStream Fraud Detection System</div>
+        <div className="navbar-subtitle">Detect · Analyze · Prevent</div>
+      </div>
 
-      <div className="user-info">
-        Admin
+      <div className="navbar-actions">
+        <div className="navbar-clock">
+          <span>{today}</span>
+          <span>{currentTime}</span>
+        </div>
+        <button className="icon-button" type="button">🔔</button>
+        <span className="admin-badge">Admin</span>
       </div>
     </div>
   );

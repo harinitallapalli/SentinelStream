@@ -1,26 +1,41 @@
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 
 function Sidebar() {
   return (
     <div className="sidebar">
-      <h2 className="logo">SentinelStream</h2>
+      <div className="logo-block">
+        <div className="logo-icon">S</div>
+        <div>
+          <h2 className="logo">SentinelStream</h2>
+          <p className="logo-subtitle">Fraud Intelligence</p>
+        </div>
+      </div>
 
       <nav>
-        <Link to="/dashboard">Dashboard</Link>
+        <NavLink className={({ isActive }) => (isActive ? "sidebar-link active" : "sidebar-link")} to="/dashboard">
+          <span>📊</span>
+          Dashboard
+        </NavLink>
 
-        <Link to="/transactions">
+        <NavLink className={({ isActive }) => (isActive ? "sidebar-link active" : "sidebar-link")} to="/transactions">
+          <span>💳</span>
           Transactions
-        </Link>
+        </NavLink>
 
-        <Link to="/alerts">
+        <NavLink className={({ isActive }) => (isActive ? "sidebar-link active" : "sidebar-link")} to="/alerts">
+          <span>🚨</span>
           Fraud Alerts
-        </Link>
+        </NavLink>
 
-        <Link to="/analytics">
+        <NavLink className={({ isActive }) => (isActive ? "sidebar-link active" : "sidebar-link")} to="/analytics">
+          <span>📈</span>
           Analytics
-        </Link>
+        </NavLink>
 
-        <Link to="/">Logout</Link>
+        <NavLink className="sidebar-link" to="/">
+          <span>⇦</span>
+          Logout
+        </NavLink>
       </nav>
     </div>
   );
