@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import {
   PieChart,
@@ -12,10 +12,14 @@ import {
   YAxis,
   CartesianGrid,
   Legend,
+  AreaChart,
+  Area,
 } from "recharts";
 
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
+import TransactionDetailsModal from "../components/TransactionDetailsModal";
+import { generatePDFReport } from "../utils/pdfGenerator";
 
 function Dashboard() {
   const [stats, setStats] = useState({});
@@ -28,19 +32,32 @@ function Dashboard() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("ALL");
 
+  // New States
+  const [trendData, setTrendData] = useState([]);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [refreshInterval, setRefreshInterval] = useState(10); // Default to 10s
+
   const loadData = async () => {
     try {
-      const [dashboardRes, statsRes, transactionsRes, alertsRes] = await Promise.all([
+      const [dashboardRes, statsRes, transactionsRes, alertsRes, trendRes] = await Promise.all([
         axios.get("http://127.0.0.1:8000/dashboard/"),
         axios.get("http://127.0.0.1:8000/stats/"),
         axios.get("http://127.0.0.1:8000/transactions/"),
         axios.get("http://127.0.0.1:8000/alerts/"),
+        axios.get("http://127.0.0.1:8000/stats/trend/"),
       ]);
 
       setDashboardOverview(dashboardRes.data || {});
       setStats(statsRes.data || {});
       setTransactions(transactionsRes.data || []);
       setAlerts(alertsRes.data || []);
+      setTrendData(trendRes.data || []);
+
+      // Update currently open details modal transaction if it exists
+      if (selectedTransaction) {
+        const updatedTx = (transactionsRes.data || []).find(t => t.id === selectedTransaction.id);
+        if (updatedTx) setSelectedTransaction(updatedTx);
+      }
     } catch (error) {
       console.error(error);
     }
@@ -49,6 +66,14 @@ function Dashboard() {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (refreshInterval === 0) return;
+    const interval = setInterval(() => {
+      loadData();
+    }, refreshInterval * 1000);
+    return () => clearInterval(interval);
+  }, [refreshInterval, selectedTransaction]);
 
   const createTransaction = async (e) => {
     e.preventDefault();
@@ -112,7 +137,32 @@ function Dashboard() {
             <p className="page-description">Real-time monitoring, alerts, and transaction analytics in one central console.</p>
           </div>
           <div className="dashboard-actions">
-            <button className="btn btn-secondary">Export Data</button>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "white", padding: "8px 12px", borderRadius: "16px", border: "1px solid #e2e8f0" }} className="dark-mode-card-nested">
+              <span className="live-dot-container" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span className={`live-dot ${refreshInterval > 0 ? "active" : ""}`} style={{
+                  width: "8px",
+                  height: "8px",
+                  borderRadius: "50%",
+                  backgroundColor: refreshInterval > 0 ? "#10b981" : "#94a3b8",
+                  display: "inline-block",
+                  boxShadow: refreshInterval > 0 ? "0 0 8px #10b981" : "none",
+                  animation: refreshInterval > 0 ? "pulse 1.5s infinite" : "none"
+                }}></span>
+                <span style={{ fontSize: "0.85rem", color: "#64748b" }}>Auto Refresh:</span>
+              </span>
+              <select 
+                value={refreshInterval} 
+                onChange={(e) => setRefreshInterval(Number(e.target.value))}
+                style={{ border: "none", background: "transparent", fontSize: "0.85rem", fontWeight: "bold", padding: "0 4px", cursor: "pointer", color: "#0f172a" }}
+              >
+                <option value="0">Off</option>
+                <option value="5">5s</option>
+                <option value="10">10s</option>
+                <option value="30">30s</option>
+                <option value="60">60s</option>
+              </select>
+            </div>
+            <button className="btn btn-secondary" onClick={() => generatePDFReport(transactions, stats)}>Export PDF</button>
             <button className="btn btn-primary" type="button" onClick={loadData}>Refresh</button>
           </div>
         </div>
@@ -144,6 +194,7 @@ function Dashboard() {
             <span className="stat-caption">System fraud rate</span>
           </div>
         </div>
+
 
         <div className="dashboard-row">
           <div className="chart-card">
@@ -187,6 +238,43 @@ function Dashboard() {
           </div>
         </div>
 
+        <div className="dashboard-row" style={{ gridTemplateColumns: "1fr" }}>
+          <div className="chart-card">
+            <div className="chart-card-header">
+              <div>
+                <h2>Fraud & Risk Volume Trend</h2>
+                <p>Safe, fraud and high-risk transaction trends over the last 7 days.</p>
+              </div>
+            </div>
+            <ResponsiveContainer width="100%" height={320}>
+              <AreaChart data={trendData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                <defs>
+                  <linearGradient id="colorSafe" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorFraud" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorHighRisk" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Area type="monotone" dataKey="Safe" stroke="#22c55e" fillOpacity={1} fill="url(#colorSafe)" />
+                <Area type="monotone" dataKey="Fraud" stroke="#ef4444" fillOpacity={1} fill="url(#colorFraud)" />
+                <Area type="monotone" dataKey="HighRisk" stroke="#f59e0b" fillOpacity={1} fill="url(#colorHighRisk)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
         <div className="panel-grid">
           <div className="table-card">
             <div className="table-card-header">
@@ -220,7 +308,12 @@ function Dashboard() {
               <tbody>
                 {filteredTransactions.length > 0 ? (
                   filteredTransactions.map((transaction) => (
-                    <tr key={transaction.id}>
+                    <tr 
+                      key={transaction.id} 
+                      onClick={() => setSelectedTransaction(transaction)} 
+                      style={{ cursor: "pointer" }}
+                      title="Click to view details"
+                    >
                       <td>{transaction.id}</td>
                       <td>{transaction.user_id}</td>
                       <td>₹{transaction.amount}</td>
@@ -260,7 +353,15 @@ function Dashboard() {
               <tbody>
                 {alerts.length > 0 ? (
                   alerts.map((alert) => (
-                    <tr key={alert.id}>
+                    <tr 
+                      key={alert.id}
+                      onClick={() => {
+                        const tx = transactions.find((t) => t.id === alert.transaction_id);
+                        if (tx) setSelectedTransaction(tx);
+                      }}
+                      style={{ cursor: "pointer" }}
+                      title="Click to view transaction details"
+                    >
                       <td>{alert.id}</td>
                       <td>{alert.transaction_id}</td>
                       <td>{alert.reason}</td>
@@ -306,6 +407,15 @@ function Dashboard() {
             <button type="submit" className="btn btn-primary">Create Transaction</button>
           </form>
         </div>
+
+        {selectedTransaction && (
+          <TransactionDetailsModal
+            transaction={selectedTransaction}
+            alertItem={alerts.find((a) => a.transaction_id === selectedTransaction.id)}
+            onClose={() => setSelectedTransaction(null)}
+            onUpdate={loadData}
+          />
+        )}
       </div>
     </div>
   );

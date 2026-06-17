@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, Float, String
+from sqlalchemy import Column, Integer, Float, String, DateTime
 from app.models.user import Base
+from datetime import datetime
 
 class Transaction(Base):
     __tablename__ = "transactions"
@@ -9,3 +10,4 @@ class Transaction(Base):
     amount = Column(Float)
     location = Column(String(100))
     status = Column(String(50))
+    timestamp = Column(DateTime, default=datetime.utcnow)

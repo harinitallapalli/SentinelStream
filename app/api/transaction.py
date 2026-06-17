@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -33,9 +33,11 @@ async def create_transaction(
     await db.refresh(new_transaction)
 
     if status in ["FRAUD", "HIGH_RISK"]:
+        priority = "HIGH" if status == "HIGH_RISK" else "MEDIUM"
         alert = FraudAlert(
             transaction_id=new_transaction.id,
-            reason="Suspicious Transaction"
+            reason="Suspicious Transaction",
+            priority=priority
         )
 
         db.add(alert)
@@ -49,7 +51,7 @@ async def get_transactions(
     db: AsyncSession = Depends(get_db)
 ):
     result = await db.execute(
-        select(Transaction)
+        select(Transaction).order_by(Transaction.id.desc())
     )
 
     transactions = result.scalars().all()
@@ -62,7 +64,7 @@ async def get_fraud_transactions(
     db: AsyncSession = Depends(get_db)
 ):
     result = await db.execute(
-        select(Transaction)
+        select(Transaction).order_by(Transaction.id.desc())
     )
 
     transactions = result.scalars().all()
@@ -74,3 +76,22 @@ async def get_fraud_transactions(
     ]
 
     return fraud_transactions
+
+
+@router.put("/{transaction_id}/status")
+async def update_transaction_status(
+    transaction_id: int,
+    status: str,
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(
+        select(Transaction).filter(Transaction.id == transaction_id)
+    )
+    transaction = result.scalars().first()
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    transaction.status = status.upper()
+    await db.commit()
+    await db.refresh(transaction)
+    return {"message": "Transaction status updated", "transaction": transaction}

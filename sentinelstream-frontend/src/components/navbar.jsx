@@ -1,7 +1,9 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useTheme } from "../context/ThemeContext.jsx";
 
 function Navbar() {
   const [currentTime, setCurrentTime] = useState("");
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const tick = () => {
@@ -38,6 +40,15 @@ function Navbar() {
           <span>{today}</span>
           <span>{currentTime}</span>
         </div>
+        <button 
+          className="icon-button" 
+          type="button" 
+          onClick={toggleTheme} 
+          title={`Switch to ${theme === "light" ? "Dark" : "Light"} Mode`}
+          style={{ marginRight: "4px" }}
+        >
+          {theme === "light" ? "🌙" : "☀️"}
+        </button>
         <button className="icon-button" type="button">🔔</button>
         <span className="admin-badge">Admin</span>
       </div>

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
 from app.models.user import Base
 
 
@@ -14,3 +14,5 @@ class FraudAlert(Base):
     )
 
     reason = Column(String)
+    resolved = Column(Boolean, default=False)
+    priority = Column(String(50), default="MEDIUM")

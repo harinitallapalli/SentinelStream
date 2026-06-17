@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from datetime import datetime, timedelta
 
 from app.database.db import get_db
 from app.models.transaction import Transaction
@@ -63,3 +64,36 @@ async def get_stats(
         "fraud_rate": f"{fraud_rate}%",
         "total_amount_processed": total_amount,
     }
+
+
+@router.get("/trend")
+async def get_trend(
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(
+        select(Transaction).order_by(Transaction.timestamp.asc())
+    )
+    transactions = result.scalars().all()
+
+    trend_dict = {}
+
+    today = datetime.utcnow()
+    for i in range(6, -1, -1):
+        day_str = (today - timedelta(days=i)).strftime("%Y-%m-%d")
+        trend_dict[day_str] = {"date": day_str, "Safe": 0, "Fraud": 0, "HighRisk": 0}
+
+    for t in transactions:
+        if t.timestamp:
+            date_str = t.timestamp.strftime("%Y-%m-%d")
+            if date_str not in trend_dict:
+                trend_dict[date_str] = {"date": date_str, "Safe": 0, "Fraud": 0, "HighRisk": 0}
+
+            if t.status == "SAFE":
+                trend_dict[date_str]["Safe"] += 1
+            elif t.status == "FRAUD":
+                trend_dict[date_str]["Fraud"] += 1
+            elif t.status == "HIGH_RISK":
+                trend_dict[date_str]["HighRisk"] += 1
+
+    sorted_trend = sorted(trend_dict.values(), key=lambda x: x["date"])
+    return sorted_trend
