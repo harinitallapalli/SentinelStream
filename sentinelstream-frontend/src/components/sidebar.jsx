@@ -32,6 +32,21 @@ function Sidebar() {
           Analytics
         </NavLink>
 
+        <NavLink className={({ isActive }) => (isActive ? "sidebar-link active" : "sidebar-link")} to="/map">
+          <span>🌐</span>
+          Global Map
+        </NavLink>
+
+        <NavLink className={({ isActive }) => (isActive ? "sidebar-link active" : "sidebar-link")} to="/reports">
+          <span>📄</span>
+          System Reports
+        </NavLink>
+
+        <NavLink className={({ isActive }) => (isActive ? "sidebar-link active" : "sidebar-link")} to="/settings">
+          <span>⚙️</span>
+          Platform Settings
+        </NavLink>
+
         <NavLink className="sidebar-link" to="/">
           <span>⇦</span>
           Logout

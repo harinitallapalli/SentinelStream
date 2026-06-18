@@ -4,6 +4,8 @@ from app.api.transaction import router as transaction_router
 from app.api.alert import router as alert_router
 from app.api.stats import router as stats_router
 from app.api.dashboard import router as dashboard_router
+from app.api.settings import router as settings_router
+from app.api.reports import router as reports_router
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="SentinelStream")
@@ -40,6 +42,16 @@ app.include_router(
     dashboard_router,
     prefix="/dashboard",
     tags=["Dashboard"]
+)
+app.include_router(
+    settings_router,
+    prefix="/settings",
+    tags=["Settings"]
+)
+app.include_router(
+    reports_router,
+    prefix="/reports",
+    tags=["Reports"]
 )
 
 @app.get("/")

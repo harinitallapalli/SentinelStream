@@ -16,10 +16,27 @@ async def create_transaction(
     transaction: TransactionCreate,
     db: AsyncSession = Depends(get_db)
 ):
-    status = check_fraud(
-        transaction.amount,
-        transaction.location
-    )
+    # Fetch system settings
+    from app.models.settings import SystemSettings
+    settings_result = await db.execute(select(SystemSettings).filter(SystemSettings.id == 1))
+    settings = settings_result.scalars().first()
+
+    if settings:
+        fraud_threshold = settings.fraud_amount_threshold
+        high_risk_threshold = settings.high_risk_amount_threshold
+        locs_list = [loc.strip() for loc in settings.suspicious_locations.split(",") if loc.strip()]
+        status = check_fraud(
+            transaction.amount,
+            transaction.location,
+            fraud_threshold=fraud_threshold,
+            high_risk_threshold=high_risk_threshold,
+            suspicious_locations=locs_list
+        )
+    else:
+        status = check_fraud(
+            transaction.amount,
+            transaction.location
+        )
 
     new_transaction = Transaction(
         user_id=transaction.user_id,
