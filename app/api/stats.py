@@ -5,13 +5,16 @@ from datetime import datetime, timedelta
 
 from app.database.db import get_db
 from app.models.transaction import Transaction
+from app.utils.auth import get_current_user
+from app.models.user import User
 
 router = APIRouter()
 
 
 @router.get("/")
 async def get_stats(
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     result = await db.execute(
         select(Transaction)
@@ -68,7 +71,8 @@ async def get_stats(
 
 @router.get("/trend")
 async def get_trend(
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     result = await db.execute(
         select(Transaction).order_by(Transaction.timestamp.asc())

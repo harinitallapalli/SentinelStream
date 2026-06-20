@@ -7,6 +7,8 @@ from app.models.transaction import Transaction
 from app.models.fraud_alert import FraudAlert
 from app.schemas.transaction import TransactionCreate
 from app.services.fraud_service import check_fraud
+from app.utils.auth import get_current_user, RoleChecker
+from app.models.user import User
 
 router = APIRouter()
 
@@ -14,7 +16,8 @@ router = APIRouter()
 @router.post("/")
 async def create_transaction(
     transaction: TransactionCreate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(RoleChecker(["Admin", "Analyst"]))
 ):
     # Fetch system settings
     from app.models.settings import SystemSettings
@@ -59,13 +62,39 @@ async def create_transaction(
 
         db.add(alert)
         await db.commit()
+        
+        # Broadcast the alert via WebSocket to all connected console clients
+        # We will import the active connections manager dynamically
+        try:
+            from app.api.alert import manager as ws_manager
+            await ws_manager.broadcast({
+                "type": "NEW_ALERT",
+                "alert": {
+                    "id": alert.id,
+                    "transaction_id": new_transaction.id,
+                    "reason": alert.reason,
+                    "priority": alert.priority,
+                    "resolved": alert.resolved,
+                },
+                "transaction": {
+                    "id": new_transaction.id,
+                    "user_id": new_transaction.user_id,
+                    "amount": new_transaction.amount,
+                    "location": new_transaction.location,
+                    "status": new_transaction.status,
+                    "timestamp": new_transaction.timestamp.isoformat() if new_transaction.timestamp else None
+                }
+            })
+        except Exception as e:
+            print(f"Failed to broadcast WebSocket alert: {e}")
 
     return {"message": "Transaction Created"}
 
 
 @router.get("/")
 async def get_transactions(
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     result = await db.execute(
         select(Transaction).order_by(Transaction.id.desc())
@@ -78,7 +107,8 @@ async def get_transactions(
 
 @router.get("/fraud")
 async def get_fraud_transactions(
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     result = await db.execute(
         select(Transaction).order_by(Transaction.id.desc())
@@ -99,7 +129,8 @@ async def get_fraud_transactions(
 async def update_transaction_status(
     transaction_id: int,
     status: str,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(RoleChecker(["Admin", "Analyst"]))
 ):
     result = await db.execute(
         select(Transaction).filter(Transaction.id == transaction_id)
@@ -111,4 +142,4 @@ async def update_transaction_status(
     transaction.status = status.upper()
     await db.commit()
     await db.refresh(transaction)
-    return {"message": "Transaction status updated", "transaction": transaction}
+    return {"message": "Transaction status updated", "transaction": transaction}

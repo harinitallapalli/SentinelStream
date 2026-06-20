@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useTheme } from "../context/ThemeContext.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 
 function Navbar() {
   const [currentTime, setCurrentTime] = useState("");
   const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
 
   useEffect(() => {
     const tick = () => {
@@ -50,10 +52,13 @@ function Navbar() {
           {theme === "light" ? "🌙" : "☀️"}
         </button>
         <button className="icon-button" type="button">🔔</button>
-        <span className="admin-badge">Admin</span>
+        <span className="admin-badge" style={{ background: user?.role === "Admin" ? "#ef4444" : user?.role === "Analyst" ? "#3b82f6" : "#10b981" }}>
+          {user?.role || "Viewer"}
+        </span>
       </div>
     </div>
   );
 }
 
 export default Navbar;
+

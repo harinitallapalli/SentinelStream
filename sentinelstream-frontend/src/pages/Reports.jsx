@@ -45,6 +45,24 @@ function Reports() {
     }
   };
 
+  const downloadReport = async (reportId, filename) => {
+    try {
+      const response = await axios.get(`http://127.0.0.1:8000/reports/${reportId}/download`, {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } catch (error) {
+      console.error("Failed to download report:", error);
+      alert("Failed to download report file.");
+    }
+  };
+
   return (
     <div className="app-layout">
       <Sidebar />
@@ -114,7 +132,7 @@ function Reports() {
                   <div style={{ display: "flex", gap: "8px" }}>
                     <button 
                       className="btn btn-secondary" 
-                      onClick={() => alert(`Downloading ${report.name}...`)}
+                      onClick={() => downloadReport(report.id, report.name)}
                       style={{ padding: "8px 12px", fontSize: "0.8rem" }}
                     >
                       Download {report.file_type}

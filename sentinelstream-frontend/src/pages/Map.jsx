@@ -2,6 +2,21 @@ import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 
+const locationCoords = {
+  "darkweb": { x: 500, y: 220 },
+  "foreign proxy": { x: 350, y: 280 },
+  "foreign ip": { x: 350, y: 280 },
+  "london": { x: 480, y: 120 },
+  "northeast us": { x: 280, y: 140 },
+  "new york": { x: 280, y: 140 },
+  "southwest asia": { x: 560, y: 160 },
+  "delhi": { x: 580, y: 180 },
+  "mumbai": { x: 570, y: 200 },
+  "bangalore": { x: 575, y: 210 },
+  "tokyo": { x: 760, y: 140 },
+  "sydney": { x: 800, y: 340 }
+};
+
 function Map() {
   const [liveFeeds, setLiveFeeds] = useState([
     { id: "TX1084", time: "Just now", amount: "₹84,500", location: "DarkWeb", status: "FRAUD" },
@@ -11,35 +26,77 @@ function Map() {
     { id: "TX1080", time: "8m ago", amount: "₹500", location: "Mumbai", status: "SAFE" },
   ]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const ids = ["TX10" + Math.floor(Math.random() * 100 + 85), "TX10" + Math.floor(Math.random() * 100 + 185)];
-      const locs = ["DarkWeb", "Foreign Proxy", "London", "Northeast US", "New York", "Southwest Asia"];
-      const statuses = ["FRAUD", "HIGH_RISK", "SAFE"];
-      const amounts = ["₹" + (Math.floor(Math.random() * 90000) + 1000).toLocaleString(), "₹" + (Math.floor(Math.random() * 8000) + 200).toLocaleString()];
-      
-      const newFeed = {
-        id: ids[Math.floor(Math.random() * ids.length)],
-        time: "Just now",
-        amount: amounts[Math.floor(Math.random() * amounts.length)],
-        location: locs[Math.floor(Math.random() * locs.length)],
-        status: statuses[Math.floor(Math.random() * statuses.length)]
-      };
-      
-      setLiveFeeds(prev => {
-        const updated = prev.map(f => {
-          if (f.time === "Just now") return { ...f, time: "1m ago" };
-          if (f.time.includes("m ago")) {
-            const m = parseInt(f.time) + 1;
-            return { ...f, time: `${m}m ago` };
-          }
-          return f;
-        });
-        return [newFeed, ...updated.slice(0, 4)];
-      });
-    }, 6000);
+  const [markers, setMarkers] = useState([
+    { id: 1, x: 280, y: 140, priority: "HIGH" },
+    { id: 2, x: 480, y: 120, priority: "MEDIUM" },
+    { id: 3, x: 560, y: 160, priority: "HIGH" },
+    { id: 4, x: 720, y: 130, priority: "MEDIUM" }
+  ]);
 
-    return () => clearInterval(interval);
+  useEffect(() => {
+    // 1. Establish live WebSockets stream
+    const ws = new WebSocket("ws://127.0.0.1:8000/alerts/ws");
+    
+    ws.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        if (message.type === "NEW_ALERT") {
+          const loc = message.transaction.location;
+          const locClean = loc.toLowerCase().trim();
+          
+          // Map to coordinates or generate dynamic fallback based on name hash
+          const coord = locationCoords[locClean] || {
+            x: 200 + (locClean.charCodeAt(0) * 7) % 550,
+            y: 100 + (locClean.charCodeAt(1 || 0) * 5) % 250
+          };
+
+          const newFeed = {
+            id: `TX${message.transaction.id}`,
+            time: "Just now",
+            amount: `₹${message.transaction.amount.toLocaleString()}`,
+            location: loc,
+            status: message.transaction.status
+          };
+
+          setLiveFeeds(prev => {
+            const updated = prev.map(f => {
+              if (f.time === "Just now") return { ...f, time: "1m ago" };
+              if (f.time.includes("m ago")) {
+                const m = parseInt(f.time) + 1;
+                return { ...f, time: `${m}m ago` };
+              }
+              return f;
+            });
+            return [newFeed, ...updated.slice(0, 4)];
+          });
+
+          // Add interactive threat map marker
+          setMarkers(prev => [
+            { id: Date.now(), x: coord.x, y: coord.y, priority: message.alert.priority },
+            ...prev.slice(0, 7) // Keep latest 8 threat markers active
+          ]);
+        }
+      } catch (e) {
+        console.error("Error reading map WS feed:", e);
+      }
+    };
+
+    // 2. Periodic timer to update timestamps on feeds (e.g. 1m ago -> 2m ago)
+    const timer = setInterval(() => {
+      setLiveFeeds(prev => prev.map(f => {
+        if (f.time === "Just now") return { ...f, time: "1m ago" };
+        if (f.time.includes("m ago")) {
+          const m = parseInt(f.time) + 1;
+          return { ...f, time: `${m}m ago` };
+        }
+        return f;
+      }));
+    }, 60000);
+
+    return () => {
+      ws.close();
+      clearInterval(timer);
+    };
   }, []);
 
   return (
@@ -59,7 +116,7 @@ function Map() {
         <div className="dashboard-row">
           <div className="map-world-container" style={{ minHeight: "440px" }}>
             <svg viewBox="0 0 1000 480" width="100%" height="100%" style={{ background: "transparent" }}>
-              {/* Stylized high tech grid world grid */}
+              {/* Stylized high tech world grid */}
               <defs>
                 <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
                   <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255, 255, 255, 0.03)" strokeWidth="1" />
@@ -67,7 +124,7 @@ function Map() {
               </defs>
               <rect width="100%" height="100%" fill="url(#grid)" />
 
-              {/* Stylized world maps vector outlines (simplified high-tech dots/paths representation) */}
+              {/* Stylized world maps vector outlines */}
               {/* North America */}
               <path d="M150,100 L250,90 L320,120 L300,180 L250,220 L220,190 L160,170 Z" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
               {/* South America */}
@@ -84,30 +141,13 @@ function Map() {
               <path d="M560,160 Q660,120 720,130" fill="none" stroke="rgba(244, 63, 94, 0.4)" strokeWidth="1.5" strokeDasharray="5,5" />
               <path d="M510,260 Q420,200 320,150" fill="none" stroke="rgba(245, 158, 11, 0.3)" strokeWidth="1.5" strokeDasharray="5,5" />
 
-              {/* Threat Hotspots - Pulsing rings */}
-              {/* Northeast US */}
-              <g transform="translate(280, 140)">
-                <circle r="20" className="map-glow-ring" />
-                <circle r="4" className="map-glow-point" />
-              </g>
-
-              {/* Western Europe */}
-              <g transform="translate(480, 120)">
-                <circle r="20" className="map-glow-ring" style={{ animationDelay: "0.5s" }} />
-                <circle r="4" className="map-glow-point" />
-              </g>
-
-              {/* Southwest Asia */}
-              <g transform="translate(560, 160)">
-                <circle r="20" className="map-glow-ring" style={{ animationDelay: "1s" }} />
-                <circle r="4" className="map-glow-point" />
-              </g>
-
-              {/* East Asia */}
-              <g transform="translate(720, 130)">
-                <circle r="20" className="map-glow-ring" style={{ animationDelay: "1.5s" }} />
-                <circle r="4" className="map-glow-point" />
-              </g>
+              {/* Threat Hotspots - Pulsing rings mapped from state */}
+              {markers.map((marker) => (
+                <g key={marker.id} transform={`translate(${marker.x}, ${marker.y})`}>
+                  <circle r="18" className="map-glow-ring" style={{ stroke: marker.priority === "HIGH" ? "#ef4444" : "#f59e0b" }} />
+                  <circle r="4" className="map-glow-point" style={{ fill: marker.priority === "HIGH" ? "#ef4444" : "#f59e0b" }} />
+                </g>
+              ))}
             </svg>
 
             {/* Map Legend */}

@@ -8,11 +8,16 @@ from app.models.settings import SystemSettings
 from app.models.api_key import ApiKey
 from app.schemas.settings import SystemSettingsUpdate
 from app.schemas.api_key import ApiKeyCreate
+from app.utils.auth import get_current_user, RoleChecker
+from app.models.user import User
 
 router = APIRouter()
 
 @router.get("/rules")
-async def get_rules(db: AsyncSession = Depends(get_db)):
+async def get_rules(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     result = await db.execute(select(SystemSettings).filter(SystemSettings.id == 1))
     settings = result.scalars().first()
     
@@ -33,7 +38,11 @@ async def get_rules(db: AsyncSession = Depends(get_db)):
     return settings
 
 @router.post("/rules")
-async def update_rules(payload: SystemSettingsUpdate, db: AsyncSession = Depends(get_db)):
+async def update_rules(
+    payload: SystemSettingsUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(RoleChecker(["Admin"]))
+):
     result = await db.execute(select(SystemSettings).filter(SystemSettings.id == 1))
     settings = result.scalars().first()
     
@@ -52,13 +61,20 @@ async def update_rules(payload: SystemSettingsUpdate, db: AsyncSession = Depends
     return {"message": "Settings updated successfully", "settings": settings}
 
 @router.get("/keys")
-async def list_keys(db: AsyncSession = Depends(get_db)):
+async def list_keys(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(RoleChecker(["Admin"]))
+):
     result = await db.execute(select(ApiKey).order_by(ApiKey.id.desc()))
     keys = result.scalars().all()
     return keys
 
 @router.post("/keys")
-async def create_key(payload: ApiKeyCreate, db: AsyncSession = Depends(get_db)):
+async def create_key(
+    payload: ApiKeyCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(RoleChecker(["Admin"]))
+):
     random_hex = secrets.token_hex(16)
     preview = f"sentinel_live_{random_hex[:8]}...{random_hex[-4:]}"
     full_token = f"sentinel_live_{random_hex}"
@@ -79,7 +95,11 @@ async def create_key(payload: ApiKeyCreate, db: AsyncSession = Depends(get_db)):
     }
 
 @router.delete("/keys/{key_id}")
-async def revoke_key(key_id: int, db: AsyncSession = Depends(get_db)):
+async def revoke_key(
+    key_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(RoleChecker(["Admin"]))
+):
     result = await db.execute(select(ApiKey).filter(ApiKey.id == key_id))
     key = result.scalars().first()
     if not key:
@@ -88,3 +108,4 @@ async def revoke_key(key_id: int, db: AsyncSession = Depends(get_db)):
     await db.delete(key)
     await db.commit()
     return {"message": "API Key revoked successfully"}
+

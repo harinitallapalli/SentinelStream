@@ -58,7 +58,10 @@ function TransactionDetailsModal({ transaction, alertItem, onClose, onUpdate }) 
     if (!alertItem) return;
     setLoading(true);
     try {
-      await axios.put(`http://127.0.0.1:8000/alerts/${alertItem.id}/resolve`);
+      await axios.put(`http://127.0.0.1:8000/alerts/${alertItem.id}/resolve`, {
+        review_notes: reviewNotes,
+        reason_code: reasonCode
+      });
       onUpdate();
       alert("Alert marked as resolved.");
     } catch (error) {
@@ -140,37 +143,85 @@ function TransactionDetailsModal({ transaction, alertItem, onClose, onUpdate }) 
               <p style={{ fontSize: "0.9rem" }}>
                 Reason: <strong>{alertItem.reason}</strong> | Priority: <strong style={{ color: alertItem.priority === "HIGH" ? "#ef4444" : "#f59e0b" }}>{alertItem.priority || "MEDIUM"}</strong>
               </p>
-              <p style={{ fontSize: "0.9rem", color: "#64748b" }}>
-                Status: <strong>{alertItem.resolved ? "Resolved" : "Open"}</strong>
+              <p style={{ fontSize: "0.9rem", color: "#64748b", marginTop: "4px" }}>
+                Status: <strong style={{ color: alertItem.resolved ? "#10b981" : "#ef4444" }}>{alertItem.resolved ? "Resolved" : "Open"}</strong>
               </p>
+
+              {alertItem.resolved ? (
+                <div style={{ marginTop: "12px", background: "#f8fafc", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                  <p style={{ fontSize: "0.85rem", margin: "2px 0" }}>Reason Code: <strong style={{ color: "#475569" }}>{alertItem.reason_code || "N/A"}</strong></p>
+                  <p style={{ fontSize: "0.85rem", margin: "2px 0" }}>Notes: <span style={{ color: "#64748b", fontStyle: "italic" }}>"{alertItem.review_notes || "No notes added"}"</span></p>
+                  <p style={{ fontSize: "0.8rem", margin: "2px 0", color: "#94a3b8" }}>Resolved by: {alertItem.resolved_by || "System"} on {alertItem.resolved_at ? new Date(alertItem.resolved_at).toLocaleString() : "N/A"}</p>
+                </div>
+              ) : (
+                isAuthorized && (
+                  <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <span style={{ fontSize: "0.8rem", fontWeight: "bold", color: "#475569" }}>Reason Code</span>
+                      <select 
+                        value={reasonCode} 
+                        onChange={(e) => setReasonCode(e.target.value)}
+                        style={{ padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", background: "#fff", fontSize: "0.85rem" }}
+                      >
+                        <option value="LEGITIMATE_BEHAVIOR">Legitimate User Behavior</option>
+                        <option value="CARD_TESTING">Card Testing / Velocity Abuse</option>
+                        <option value="ACCOUNT_TAKEOVER">Account Takeover (ATO)</option>
+                        <option value="STOLEN_CREDENTIALS">Stolen Credentials / Identity Fraud</option>
+                        <option value="MISTAKE">User Error / Accidental</option>
+                        <option value="OTHER">Other Suspicious Behavior</option>
+                      </select>
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <span style={{ fontSize: "0.8rem", fontWeight: "bold", color: "#475569" }}>Review Notes</span>
+                      <textarea 
+                        placeholder="Add review notes or justification..." 
+                        value={reviewNotes} 
+                        onChange={(e) => setReviewNotes(e.target.value)}
+                        style={{ padding: "8px", borderRadius: "6px", border: "1px solid #cbd5e1", fontSize: "0.85rem", height: "60px", resize: "none" }}
+                      />
+                    </div>
+                  </div>
+                )
+              )}
             </div>
           )}
 
           <div className="modal-section">
             <h3>Risk Controls</h3>
+            {!isAuthorized && (
+              <p style={{ color: "#ef4444", fontSize: "0.85rem", margin: "4px 0" }}>
+                🔒 Read-only view: You do not have permissions to modify transaction status or resolve alerts.
+              </p>
+            )}
             <div className="modal-actions">
               <button 
                 className="btn btn-secondary" 
-                disabled={loading || transaction.status === "SAFE"}
+                disabled={loading || !isAuthorized || transaction.status === "SAFE"}
                 onClick={() => updateStatus("SAFE")}
-                style={{ flex: 1, background: transaction.status === "SAFE" ? "#f1f5f9" : "", cursor: loading ? "not-allowed" : "pointer" }}
+                style={{ flex: 1, background: transaction.status === "SAFE" ? "#f1f5f9" : "", cursor: (!isAuthorized || loading) ? "not-allowed" : "pointer" }}
               >
                 Mark Safe
               </button>
               <button 
                 className="btn btn-secondary" 
-                disabled={loading || transaction.status === "FRAUD"}
+                disabled={loading || !isAuthorized || transaction.status === "FRAUD"}
                 onClick={() => updateStatus("FRAUD")}
-                style={{ flex: 1, border: "1px solid #ef4444", color: "#ef4444", cursor: loading ? "not-allowed" : "pointer" }}
+                style={{ flex: 1, border: "1px solid #ef4444", color: "#ef4444", cursor: (!isAuthorized || loading) ? "not-allowed" : "pointer" }}
               >
                 Mark Fraud
               </button>
               {alertItem && !alertItem.resolved && (
                 <button 
                   className="btn btn-primary" 
-                  disabled={loading}
+                  disabled={loading || !isAuthorized || !reviewNotes.trim()}
                   onClick={resolveAlert}
-                  style={{ flex: 1.2, background: "#10b981", cursor: loading ? "not-allowed" : "pointer" }}
+                  style={{ 
+                    flex: 1.2, 
+                    background: (!isAuthorized || !reviewNotes.trim()) ? "#cbd5e1" : "#10b981", 
+                    cursor: (loading || !isAuthorized || !reviewNotes.trim()) ? "not-allowed" : "pointer" 
+                  }}
+                  title={!reviewNotes.trim() ? "Please add review notes first" : "Resolve alert"}
                 >
                   Resolve Alert
                 </button>
@@ -184,3 +235,4 @@ function TransactionDetailsModal({ transaction, alertItem, onClose, onUpdate }) 
 }
 
 export default TransactionDetailsModal;
+

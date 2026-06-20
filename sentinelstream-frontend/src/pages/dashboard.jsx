@@ -36,6 +36,7 @@ function Dashboard() {
   const [trendData, setTrendData] = useState([]);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [refreshInterval, setRefreshInterval] = useState(10); // Default to 10s
+  const [toast, setToast] = useState(null);
 
   const loadData = async () => {
     try {
@@ -65,6 +66,36 @@ function Dashboard() {
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  useEffect(() => {
+    // Establish real-time WebSocket connection to the backend alert stream
+    const ws = new WebSocket("ws://127.0.0.1:8000/alerts/ws");
+    
+    ws.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        if (message.type === "NEW_ALERT") {
+          // Instantly refresh numbers
+          loadData();
+          // Trigger the premium toast animation
+          setToast({
+            id: message.alert.id,
+            amount: message.transaction.amount,
+            location: message.transaction.location,
+            priority: message.alert.priority
+          });
+          // Dismiss notification automatically
+          setTimeout(() => setToast(null), 5000);
+        }
+      } catch (e) {
+        console.error("Error handling WebSocket message:", e);
+      }
+    };
+
+    return () => {
+      ws.close();
+    };
   }, []);
 
   useEffect(() => {
@@ -415,6 +446,44 @@ function Dashboard() {
             onClose={() => setSelectedTransaction(null)}
             onUpdate={loadData}
           />
+        )}
+
+        {/* Real-time WebSocket Alert Toast */}
+        {toast && (
+          <div style={{
+            position: "fixed",
+            bottom: "24px",
+            right: "24px",
+            background: "rgba(15, 23, 42, 0.95)",
+            color: "white",
+            padding: "16px 20px",
+            borderRadius: "16px",
+            boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+            borderLeft: `5px solid ${toast.priority === "HIGH" ? "#ef4444" : "#f59e0b"}`,
+            zIndex: 9999,
+            display: "flex",
+            flexDirection: "column",
+            gap: "4px",
+            minWidth: "300px",
+            backdropFilter: "blur(12px)",
+            fontFamily: "sans-serif"
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontWeight: "bold", fontSize: "0.95rem" }}>🚨 Real-Time Fraud Alert!</span>
+              <button 
+                onClick={() => setToast(null)}
+                style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: "1.1rem", padding: 0 }}
+              >
+                &times;
+              </button>
+            </div>
+            <span style={{ fontSize: "0.85rem", color: "#cbd5e1" }}>
+              Alert ID: <strong>#{toast.id}</strong> | Amount: <strong>₹{toast.amount.toLocaleString()}</strong>
+            </span>
+            <span style={{ fontSize: "0.85rem", color: "#cbd5e1" }}>
+              Location: <strong>{toast.location}</strong> | Threat Level: <strong style={{ color: toast.priority === "HIGH" ? "#ef4444" : "#f59e0b" }}>{toast.priority}</strong>
+            </span>
+          </div>
         )}
       </div>
     </div>

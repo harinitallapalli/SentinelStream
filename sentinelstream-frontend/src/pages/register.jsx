@@ -1,10 +1,37 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext.jsx";
 
 function Register() {
   const navigate = useNavigate();
+  const { register } = useAuth();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState("Analyst");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleRegister = () => {
-    navigate("/");
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    if (!name || !email || !password) {
+      setError("Please fill in all fields.");
+      return;
+    }
+    setError("");
+    setSuccess("");
+    setLoading(true);
+    const result = await register(name, email, password, role);
+    setLoading(false);
+    if (result.success) {
+      setSuccess("Account created successfully! Redirecting to login...");
+      setTimeout(() => {
+        navigate("/");
+      }, 1500);
+    } else {
+      setError(result.error);
+    }
   };
 
   return (
@@ -39,37 +66,90 @@ function Register() {
       </div>
 
       <div style={styles.rightPanel}>
-        <div style={styles.formCard}>
+        <form style={styles.formCard} onSubmit={handleRegister}>
           <div style={styles.formHeader}>
             <h2 style={styles.formTitle}>Create your account</h2>
             <p style={styles.formSubtitle}>Start a secure fraud monitoring experience for your team.</p>
           </div>
 
+          {error && (
+            <div style={{ padding: "12px", background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: "10px", color: "#ef4444", fontSize: "0.9rem", marginBottom: "18px" }}>
+              {error}
+            </div>
+          )}
+
+          {success && (
+            <div style={{ padding: "12px", background: "#f0fdf4", border: "1px solid #86efac", borderRadius: "10px", color: "#16a34a", fontSize: "0.9rem", marginBottom: "18px" }}>
+              {success}
+            </div>
+          )}
+
           <label style={styles.label}>
             Full name
-            <input type="text" placeholder="Enter your full name" style={styles.input} />
+            <input 
+              type="text" 
+              placeholder="Enter your full name" 
+              style={styles.input} 
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
           </label>
 
           <label style={styles.label}>
             Email
-            <input type="email" placeholder="Enter your email" style={styles.input} />
+            <input 
+              type="email" 
+              placeholder="Enter your email" 
+              style={styles.input} 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </label>
 
           <label style={styles.label}>
             Password
-            <input type="password" placeholder="Create a password" style={styles.input} />
+            <input 
+              type="password" 
+              placeholder="Create a password" 
+              style={styles.input} 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
           </label>
 
-          <button style={styles.signinButton} onClick={handleRegister}>Register</button>
+          <label style={styles.label}>
+            Console Role
+            <select 
+              style={{ ...styles.input, background: "white", cursor: "pointer" }} 
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+            >
+              <option value="Viewer">Viewer (Read-Only Console)</option>
+              <option value="Analyst">Analyst (Resolve Alerts, Add Tx)</option>
+              <option value="Admin">Admin (Full access, Edit settings)</option>
+            </select>
+          </label>
+
+          <button 
+            type="submit" 
+            style={{ ...styles.signinButton, opacity: loading ? 0.7 : 1, cursor: loading ? "not-allowed" : "pointer" }}
+            disabled={loading}
+          >
+            {loading ? "Registering..." : "Register"}
+          </button>
 
           <p style={styles.linkText}>
             Already have an account? <Link to="/" style={styles.link}>Login</Link>
           </p>
-        </div>
+        </form>
       </div>
     </div>
   );
 }
+
 
 const styles = {
   page: {

@@ -36,6 +36,23 @@ function Transactions() {
 
   useEffect(() => {
     loadData();
+
+    // Establish WebSockets stream for real-time transactions syncing
+    const ws = new WebSocket("ws://127.0.0.1:8000/alerts/ws");
+    ws.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        if (message.type === "NEW_ALERT") {
+          loadData();
+        }
+      } catch (e) {
+        console.error("Transactions page WS error:", e);
+      }
+    };
+
+    return () => {
+      ws.close();
+    };
   }, []);
 
   const filteredTransactions = transactions.filter((transaction) => {

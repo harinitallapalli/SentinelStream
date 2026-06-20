@@ -1,6 +1,9 @@
 import { NavLink } from "react-router-dom";
+import { useAuth } from "../context/AuthContext.jsx";
 
 function Sidebar() {
+  const { logout, user } = useAuth();
+
   return (
     <div className="sidebar">
       <div className="logo-block">
@@ -42,12 +45,14 @@ function Sidebar() {
           System Reports
         </NavLink>
 
-        <NavLink className={({ isActive }) => (isActive ? "sidebar-link active" : "sidebar-link")} to="/settings">
-          <span>⚙️</span>
-          Platform Settings
-        </NavLink>
+        {user?.role === "Admin" && (
+          <NavLink className={({ isActive }) => (isActive ? "sidebar-link active" : "sidebar-link")} to="/settings">
+            <span>⚙️</span>
+            Platform Settings
+          </NavLink>
+        )}
 
-        <NavLink className="sidebar-link" to="/">
+        <NavLink className="sidebar-link" to="/" onClick={logout}>
           <span>⇦</span>
           Logout
         </NavLink>

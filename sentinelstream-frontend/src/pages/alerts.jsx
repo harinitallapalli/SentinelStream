@@ -31,6 +31,23 @@ function Alerts() {
 
   useEffect(() => {
     loadData();
+
+    // Live WebSockets synchronization for alerts table
+    const ws = new WebSocket("ws://127.0.0.1:8000/alerts/ws");
+    ws.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        if (message.type === "NEW_ALERT") {
+          loadData();
+        }
+      } catch (e) {
+        console.error("Alert page WS error:", e);
+      }
+    };
+
+    return () => {
+      ws.close();
+    };
   }, []);
 
   const handleSelectAlert = (alertId) => {

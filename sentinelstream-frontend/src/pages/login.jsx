@@ -1,10 +1,30 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext.jsx";
 
 function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    navigate("/dashboard");
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setError("Please fill in all fields.");
+      return;
+    }
+    setError("");
+    setLoading(true);
+    const result = await login(email, password);
+    setLoading(false);
+    if (result.success) {
+      navigate("/dashboard");
+    } else {
+      setError(result.error);
+    }
   };
 
   return (
@@ -39,39 +59,59 @@ function Login() {
       </div>
 
       <div style={styles.rightPanel}>
-        <div style={styles.formCard}>
+        <form style={styles.formCard} onSubmit={handleLogin}>
           <div style={styles.formHeader}>
             <h2 style={styles.formTitle}>Sign in to your console</h2>
             <p style={styles.formSubtitle}>Access fraud alerts, transactions and analytics.</p>
           </div>
 
-          <button style={styles.socialButton} onClick={handleLogin}>
-            <span style={styles.socialIcon}>G</span>
-            Continue with Google
-          </button>
-
-          <div style={styles.divider}>OR WITH EMAIL</div>
+          {error && (
+            <div style={{ padding: "12px", background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: "10px", color: "#ef4444", fontSize: "0.9rem", marginBottom: "18px" }}>
+              {error}
+            </div>
+          )}
 
           <label style={styles.label}>
             Email
-            <input type="email" placeholder="Enter your email" style={styles.input} />
+            <input 
+              type="email" 
+              placeholder="Enter your email" 
+              style={styles.input} 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </label>
 
           <label style={styles.label}>
             Password
-            <input type="password" placeholder="Enter your password" style={styles.input} />
+            <input 
+              type="password" 
+              placeholder="Enter your password" 
+              style={styles.input} 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
           </label>
 
-          <button style={styles.signinButton} onClick={handleLogin}>Sign in</button>
+          <button 
+            type="submit" 
+            style={{ ...styles.signinButton, opacity: loading ? 0.7 : 1, cursor: loading ? "not-allowed" : "pointer" }}
+            disabled={loading}
+          >
+            {loading ? "Signing in..." : "Sign in"}
+          </button>
 
           <p style={styles.linkText}>
             Don&apos;t have an account? <Link to="/register" style={styles.link}>Register</Link>
           </p>
-        </div>
+        </form>
       </div>
     </div>
   );
 }
+
 
 const styles = {
   page: {

@@ -10,6 +10,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="SentinelStream")
 
+@app.on_event("startup")
+async def startup_event():
+    from app.database.migrations import run_migrations
+    await run_migrations()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
