@@ -28,6 +28,12 @@
   --status-highrisk-bg: rgba(245, 158, 11, 0.12);
   --status-review: #3b82f6;
   --status-review-bg: rgba(59, 130, 246, 0.12);
+
+  /* Map Colors */
+  --map-land-bg: rgba(255, 255, 255, 0.04);
+  --map-land-stroke: rgba(255, 255, 255, 0.12);
+  --map-grid: rgba(255, 255, 255, 0.02);
+  --map-vector: rgba(244, 63, 94, 0.35);
 }
 
 /* Light Mode Overrides */
@@ -59,6 +65,12 @@
   --status-highrisk-bg: rgba(245, 158, 11, 0.15);
   --status-review: #3b82f6;
   --status-review-bg: rgba(59, 130, 246, 0.15);
+
+  /* Map Colors */
+  --map-land-bg: rgba(15, 23, 42, 0.05);
+  --map-land-stroke: rgba(15, 23, 42, 0.12);
+  --map-grid: rgba(15, 23, 42, 0.03);
+  --map-vector: rgba(239, 68, 68, 0.4);
 }
 
 * {
@@ -522,35 +534,45 @@ body {
 /* Buttons */
 .btn {
   border: none;
-  border-radius: 10px;
-  padding: 10px 20px;
-  font-weight: 600;
-  font-size: 0.88rem;
+  border-radius: 12px;
+  padding: 12px 22px;
+  font-weight: 700;
+  font-size: 0.9rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-primary {
-  background: var(--btn-primary);
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   color: white;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
 }
-.btn-primary:hover {
-  background: var(--btn-primary-hover);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.45);
+}
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: var(--text-secondary);
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-focus);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+.btn-secondary:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 /* Badges Statuses */
@@ -558,33 +580,38 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.7px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .status.safe {
   color: var(--status-safe);
   background: var(--status-safe-bg);
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
 .status.fraud {
   color: var(--status-fraud);
   background: var(--status-fraud-bg);
+  border: 1px solid rgba(244, 63, 94, 0.2);
 }
 
 .status.high_risk,
 .status.high-risk {
   color: var(--status-highrisk);
   background: var(--status-highrisk-bg);
+  border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
 .status.review {
   color: var(--status-review);
   background: var(--status-review-bg);
+  border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 /* Panels and Side column layout */
@@ -800,17 +827,18 @@ body {
   stroke: #f43f5e;
   fill: none;
   transform-origin: center;
-  animation: ringPulse 2s infinite ease-out;
+  transform-box: fill-box;
+  animation: ringPulse 2.5s infinite cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 @keyframes ringPulse {
   0% {
-    r: 2px;
+    transform: scale(0.1);
     stroke-opacity: 1;
-    stroke-width: 1.5;
+    stroke-width: 3;
   }
   100% {
-    r: 22px;
+    transform: scale(1.4);
     stroke-opacity: 0;
     stroke-width: 0.5;
   }

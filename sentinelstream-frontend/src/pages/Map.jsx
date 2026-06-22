@@ -119,27 +119,27 @@ function Map() {
               {/* Stylized high tech world grid */}
               <defs>
                 <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                  <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255, 255, 255, 0.03)" strokeWidth="1" />
+                  <path d="M 20 0 L 0 0 0 20" fill="none" stroke="var(--map-grid)" strokeWidth="1" />
                 </pattern>
               </defs>
               <rect width="100%" height="100%" fill="url(#grid)" />
 
               {/* Stylized world maps vector outlines */}
               {/* North America */}
-              <path d="M150,100 L250,90 L320,120 L300,180 L250,220 L220,190 L160,170 Z" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+              <path d="M150,100 L250,90 L320,120 L300,180 L250,220 L220,190 L160,170 Z" fill="var(--map-land-bg)" stroke="var(--map-land-stroke)" strokeWidth="1" />
               {/* South America */}
-              <path d="M280,240 L340,260 L360,320 L340,420 L310,400 L280,300 Z" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+              <path d="M280,240 L340,260 L360,320 L340,420 L310,400 L280,300 Z" fill="var(--map-land-bg)" stroke="var(--map-land-stroke)" strokeWidth="1" />
               {/* Eurasia / Africa */}
-              <path d="M440,120 L550,80 L720,100 L850,120 L800,240 L680,280 L580,240 L480,180 Z" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+              <path d="M440,120 L550,80 L720,100 L850,120 L800,240 L680,280 L580,240 L480,180 Z" fill="var(--map-land-bg)" stroke="var(--map-land-stroke)" strokeWidth="1" />
               {/* Africa */}
-              <path d="M450,200 L530,210 L560,280 L520,380 L470,320 L440,240 Z" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+              <path d="M450,200 L530,210 L560,280 L520,380 L470,320 L440,240 Z" fill="var(--map-land-bg)" stroke="var(--map-land-stroke)" strokeWidth="1" />
               {/* Australia */}
-              <path d="M740,300 L820,310 L810,360 L730,340 Z" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+              <path d="M740,300 L820,310 L810,360 L730,340 Z" fill="var(--map-land-bg)" stroke="var(--map-land-stroke)" strokeWidth="1" />
 
               {/* Connections / Attack vectors */}
-              <path d="M280,140 Q400,100 480,120" fill="none" stroke="rgba(244, 63, 94, 0.4)" strokeWidth="1.5" strokeDasharray="5,5" />
-              <path d="M560,160 Q660,120 720,130" fill="none" stroke="rgba(244, 63, 94, 0.4)" strokeWidth="1.5" strokeDasharray="5,5" />
-              <path d="M510,260 Q420,200 320,150" fill="none" stroke="rgba(245, 158, 11, 0.3)" strokeWidth="1.5" strokeDasharray="5,5" />
+              <path d="M280,140 Q400,100 480,120" fill="none" stroke="var(--map-vector)" strokeWidth="1.5" strokeDasharray="5,5" />
+              <path d="M560,160 Q660,120 720,130" fill="none" stroke="var(--map-vector)" strokeWidth="1.5" strokeDasharray="5,5" />
+              <path d="M510,260 Q420,200 320,150" fill="none" stroke="var(--map-vector)" strokeWidth="1.5" strokeDasharray="5,5" />
 
               {/* Threat Hotspots - Pulsing rings mapped from state */}
               {markers.map((marker) => (

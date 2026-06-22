@@ -1,8 +1,14 @@
 import { useState } from "react";
 import axios from "axios";
+import { useAuth } from "../context/AuthContext.jsx";
 
 function TransactionDetailsModal({ transaction, alertItem, onClose, onUpdate }) {
+  const { user: currentUser } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [reviewNotes, setReviewNotes] = useState("");
+  const [reasonCode, setReasonCode] = useState("LEGITIMATE_BEHAVIOR");
+  
+  const isAuthorized = currentUser?.role === "Admin" || currentUser?.role === "Analyst";
 
   if (!transaction) return null;
 

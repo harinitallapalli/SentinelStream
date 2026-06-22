@@ -20,8 +20,10 @@ import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import TransactionDetailsModal from "../components/TransactionDetailsModal";
 import { generatePDFReport } from "../utils/pdfGenerator";
+import { useAuth } from "../context/AuthContext.jsx";
 
 function Dashboard() {
+  const { user } = useAuth();
   const [stats, setStats] = useState({});
   const [dashboardOverview, setDashboardOverview] = useState({});
   const [transactions, setTransactions] = useState([]);
@@ -411,33 +413,35 @@ function Dashboard() {
           </div>
         </div>
 
-        <div className="form-card create-transaction-card">
-          <h2>Create Transaction</h2>
-          <form onSubmit={createTransaction} className="create-form">
-            <input
-              type="number"
-              placeholder="User ID"
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              required
-            />
-            <input
-              type="number"
-              placeholder="Amount"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              required
-            />
-            <input
-              type="text"
-              placeholder="Location"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              required
-            />
-            <button type="submit" className="btn btn-primary">Create Transaction</button>
-          </form>
-        </div>
+        {(user?.role === "Admin" || user?.role === "Analyst") && (
+          <div className="form-card create-transaction-card">
+            <h2>Create Transaction</h2>
+            <form onSubmit={createTransaction} className="create-form">
+              <input
+                type="number"
+                placeholder="User ID"
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
+                required
+              />
+              <input
+                type="number"
+                placeholder="Amount"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                required
+              />
+              <input
+                type="text"
+                placeholder="Location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                required
+              />
+              <button type="submit" className="btn btn-primary">Create Transaction</button>
+            </form>
+          </div>
+        )}
 
         {selectedTransaction && (
           <TransactionDetailsModal
