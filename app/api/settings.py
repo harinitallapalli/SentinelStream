@@ -8,7 +8,7 @@ from app.models.settings import SystemSettings
 from app.models.api_key import ApiKey
 from app.schemas.settings import SystemSettingsUpdate
 from app.schemas.api_key import ApiKeyCreate
-from app.utils.auth import get_current_user, RoleChecker
+from app.utils.auth import get_current_user, require_admin, require_viewer_or_above
 from app.models.user import User
 
 router = APIRouter()
@@ -16,7 +16,7 @@ router = APIRouter()
 @router.get("/rules")
 async def get_rules(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_viewer_or_above())
 ):
     result = await db.execute(select(SystemSettings).filter(SystemSettings.id == 1))
     settings = result.scalars().first()
@@ -41,7 +41,7 @@ async def get_rules(
 async def update_rules(
     payload: SystemSettingsUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(RoleChecker(["Admin"]))
+    current_user: User = Depends(require_admin())
 ):
     result = await db.execute(select(SystemSettings).filter(SystemSettings.id == 1))
     settings = result.scalars().first()
@@ -63,7 +63,7 @@ async def update_rules(
 @router.get("/keys")
 async def list_keys(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(RoleChecker(["Admin"]))
+    current_user: User = Depends(require_admin())
 ):
     result = await db.execute(select(ApiKey).order_by(ApiKey.id.desc()))
     keys = result.scalars().all()
@@ -73,7 +73,7 @@ async def list_keys(
 async def create_key(
     payload: ApiKeyCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(RoleChecker(["Admin"]))
+    current_user: User = Depends(require_admin())
 ):
     random_hex = secrets.token_hex(16)
     preview = f"sentinel_live_{random_hex[:8]}...{random_hex[-4:]}"
@@ -98,7 +98,7 @@ async def create_key(
 async def revoke_key(
     key_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(RoleChecker(["Admin"]))
+    current_user: User = Depends(require_admin())
 ):
     result = await db.execute(select(ApiKey).filter(ApiKey.id == key_id))
     key = result.scalars().first()

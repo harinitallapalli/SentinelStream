@@ -7,7 +7,7 @@ from app.models.transaction import Transaction
 from app.models.fraud_alert import FraudAlert
 from app.schemas.transaction import TransactionCreate
 from app.services.fraud_service import check_fraud
-from app.utils.auth import get_current_user, RoleChecker
+from app.utils.auth import get_current_user, require_analyst_or_admin, require_admin, require_viewer_or_above
 from app.models.user import User
 
 router = APIRouter()
@@ -17,7 +17,7 @@ router = APIRouter()
 async def create_transaction(
     transaction: TransactionCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(RoleChecker(["Admin", "Analyst"]))
+    current_user: User = Depends(require_analyst_or_admin())
 ):
     # Fetch system settings
     from app.models.settings import SystemSettings
@@ -94,7 +94,7 @@ async def create_transaction(
 @router.get("/")
 async def get_transactions(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_viewer_or_above())
 ):
     result = await db.execute(
         select(Transaction).order_by(Transaction.id.desc())
@@ -108,7 +108,7 @@ async def get_transactions(
 @router.get("/fraud")
 async def get_fraud_transactions(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_viewer_or_above())
 ):
     result = await db.execute(
         select(Transaction).order_by(Transaction.id.desc())
@@ -130,7 +130,7 @@ async def update_transaction_status(
     transaction_id: int,
     status: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(RoleChecker(["Admin", "Analyst"]))
+    current_user: User = Depends(require_analyst_or_admin())
 ):
     result = await db.execute(
         select(Transaction).filter(Transaction.id == transaction_id)
@@ -142,4 +142,4 @@ async def update_transaction_status(
     transaction.status = status.upper()
     await db.commit()
     await db.refresh(transaction)
-    return {"message": "Transaction status updated", "transaction": transaction}
+    return {"message": "Transaction status updated", "transaction": transaction}

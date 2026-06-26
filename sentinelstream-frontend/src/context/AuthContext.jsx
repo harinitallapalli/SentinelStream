@@ -78,6 +78,11 @@ export function AuthProvider({ children }) {
     isAuthenticated: !!token,
     isAdmin: user?.role === "Admin",
     isAnalyst: user?.role === "Analyst" || user?.role === "Admin",
+    isViewer: user?.role === "Viewer" || user?.role === "Analyst" || user?.role === "Admin",
+    canCreateTransactions: user?.role === "Analyst" || user?.role === "Admin",
+    canResolveAlerts: user?.role === "Analyst" || user?.role === "Admin",
+    canEditSettings: user?.role === "Admin",
+    canGenerateReports: user?.role === "Analyst" || user?.role === "Admin",
   };
 
   return (

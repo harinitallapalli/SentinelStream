@@ -6,7 +6,7 @@ from app.database.db import get_db
 from app.models.user import User
 from app.models.transaction import Transaction
 from app.models.fraud_alert import FraudAlert
-from app.utils.auth import get_current_user
+from app.utils.auth import get_current_user, require_viewer_or_above
 
 router = APIRouter()
 
@@ -14,7 +14,7 @@ router = APIRouter()
 @router.get("/")
 async def get_dashboard(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_viewer_or_above())
 ):
     users_result = await db.execute(
         select(User)

@@ -3,8 +3,10 @@ import axios from "axios";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import TransactionDetailsModal from "../components/TransactionDetailsModal";
+import { useAuth } from "../context/AuthContext";
 
 function Alerts() {
+  const { canResolveAlerts, user } = useAuth();
   const [alerts, setAlerts] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [selectedAlertIds, setSelectedAlertIds] = useState([]);
@@ -34,15 +36,25 @@ function Alerts() {
 
     // Live WebSockets synchronization for alerts table
     const ws = new WebSocket("ws://127.0.0.1:8000/alerts/ws");
+    ws.onopen = () => {
+      console.log("WebSocket connected for alerts");
+    };
     ws.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
+        console.log("WebSocket message received:", message);
         if (message.type === "NEW_ALERT") {
           loadData();
         }
       } catch (e) {
         console.error("Alert page WS error:", e);
       }
+    };
+    ws.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
+    ws.onclose = () => {
+      console.log("WebSocket disconnected");
     };
 
     return () => {
@@ -68,9 +80,15 @@ function Alerts() {
 
   const resolveSelectedAlerts = async () => {
     if (selectedAlertIds.length === 0) return;
+    if (!canResolveAlerts) {
+      alert("You do not have permission to resolve alerts. This feature requires Analyst or Admin role.");
+      return;
+    }
     try {
       await axios.post("http://127.0.0.1:8000/alerts/resolve-multiple", {
         alert_ids: selectedAlertIds,
+        review_notes: "Bulk resolved by user",
+        reason_code: "RESOLVED_BULK"
       });
       alert(`Resolved ${selectedAlertIds.length} alert(s).`);
       setSelectedAlertIds([]);
@@ -82,8 +100,15 @@ function Alerts() {
   };
 
   const resolveSingleAlert = async (alertId) => {
+    if (!canResolveAlerts) {
+      alert("You do not have permission to resolve alerts. This feature requires Analyst or Admin role.");
+      return;
+    }
     try {
-      await axios.put(`http://127.0.0.1:8000/alerts/${alertId}/resolve`);
+      await axios.put(`http://127.0.0.1:8000/alerts/${alertId}/resolve`, {
+        review_notes: "Alert resolved by user",
+        reason_code: "RESOLVED_MANUAL"
+      });
       alert("Alert resolved.");
       // Unselect it if it was checked
       setSelectedAlertIds((prev) => prev.filter((id) => id !== alertId));
@@ -117,18 +142,24 @@ function Alerts() {
           <div>
             <h1>Fraud Alerts</h1>
             <p>Review high-risk alerts and act on suspicious transactions.</p>
+            <div style={{ marginTop: "8px", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+              Your Role: <strong style={{ color: canResolveAlerts ? "#3b82f6" : "#10b981" }}>{user?.role}</strong>
+              {canResolveAlerts ? " - Can resolve alerts" : " - View only access"}
+            </div>
           </div>
-          <button 
-            className="btn btn-primary"
-            onClick={resolveSelectedAlerts}
-            disabled={selectedAlertIds.length === 0}
-            style={{ 
-              background: selectedAlertIds.length === 0 ? "#cbd5e1" : "#2563eb",
-              cursor: selectedAlertIds.length === 0 ? "not-allowed" : "pointer" 
-            }}
-          >
-            Resolve Selected ({selectedAlertIds.length})
-          </button>
+          {canResolveAlerts && (
+            <button 
+              className="btn btn-primary"
+              onClick={resolveSelectedAlerts}
+              disabled={selectedAlertIds.length === 0}
+              style={{ 
+                background: selectedAlertIds.length === 0 ? "#cbd5e1" : "#2563eb",
+                cursor: selectedAlertIds.length === 0 ? "not-allowed" : "pointer" 
+              }}
+            >
+              Resolve Selected ({selectedAlertIds.length})
+            </button>
+          )}
         </div>
 
         <div className="stats-grid">
@@ -215,13 +246,19 @@ function Alerts() {
                     </td>
                     <td style={{ textAlign: "right" }}>
                       {!alert.resolved ? (
-                        <button
-                          className="btn btn-primary"
-                          onClick={() => resolveSingleAlert(alert.id)}
-                          style={{ padding: "6px 12px", fontSize: "0.8rem", borderRadius: "10px", background: "#10b981" }}
-                        >
-                          Resolve
-                        </button>
+                        canResolveAlerts ? (
+                          <button
+                            className="btn btn-primary"
+                            onClick={() => resolveSingleAlert(alert.id)}
+                            style={{ padding: "6px 12px", fontSize: "0.8rem", borderRadius: "10px", background: "#10b981" }}
+                          >
+                            Resolve
+                          </button>
+                        ) : (
+                          <span style={{ color: "#94a3b8", fontSize: "0.75rem", background: "#f1f5f9", padding: "4px 8px", borderRadius: "6px" }}>
+                            View Only
+                          </span>
+                        )
                       ) : (
                         <span style={{ color: "#64748b", fontSize: "0.85rem" }}>None</span>
                       )}

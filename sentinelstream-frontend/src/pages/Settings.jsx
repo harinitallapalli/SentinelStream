@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
+import { useAuth } from "../context/AuthContext";
 
 function Settings() {
+  const { canEditSettings, user } = useAuth();
   // Fraud Rules State
   const [fraudThreshold, setFraudThreshold] = useState(10000.0);
   const [highRiskThreshold, setHighRiskThreshold] = useState(50000.0);
@@ -102,6 +104,30 @@ function Settings() {
     }
   };
 
+  if (!canEditSettings) {
+    return (
+      <div className="app-layout">
+        <Sidebar />
+        <div className="main-content">
+          <Navbar />
+          <div className="page-header">
+            <div>
+              <h1>Access Denied</h1>
+              <p>You do not have permission to access Settings. This feature requires Admin role.</p>
+            </div>
+          </div>
+          <div className="table-card" style={{ padding: "40px", textAlign: "center" }}>
+            <div style={{ fontSize: "4rem", marginBottom: "20px" }}>🔒</div>
+            <h3 style={{ color: "#64748b" }}>Admin Access Required</h3>
+            <p style={{ color: "#94a3b8", marginTop: "10px" }}>
+              Your current role: <strong>{user?.role || "Unknown"}</strong>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app-layout">
       <Sidebar />
@@ -112,6 +138,9 @@ function Settings() {
           <div>
             <h1>Platform Settings</h1>
             <p>Define risk scoring thresholds, velocity control list, and manage API integrations.</p>
+            <div style={{ marginTop: "8px", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+              Your Role: <strong style={{ color: "#ef4444" }}>{user?.role}</strong> - Full system access
+            </div>
           </div>
         </div>
 

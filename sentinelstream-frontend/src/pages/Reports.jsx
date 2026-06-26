@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
+import { useAuth } from "../context/AuthContext";
 
 function Reports() {
+  const { canGenerateReports, user } = useAuth();
   const [reports, setReports] = useState([]);
   const [generating, setGenerating] = useState(false);
 
@@ -21,6 +23,10 @@ function Reports() {
   }, []);
 
   const generateReport = async () => {
+    if (!canGenerateReports) {
+      alert("You do not have permission to generate reports. This feature requires Analyst or Admin role.");
+      return;
+    }
     setGenerating(true);
     try {
       await axios.post("http://127.0.0.1:8000/reports/generate");
@@ -35,6 +41,10 @@ function Reports() {
   };
 
   const deleteReport = async (id) => {
+    if (!canGenerateReports) {
+      alert("You do not have permission to delete reports. This feature requires Analyst or Admin role.");
+      return;
+    }
     if (!window.confirm("Are you sure you want to delete this report record?")) return;
     try {
       await axios.delete(`http://127.0.0.1:8000/reports/${id}`);
@@ -74,14 +84,20 @@ function Reports() {
             <p className="eyebrow">Data Archives</p>
             <h1>System Reports</h1>
             <p className="page-description">Generate, search, and download security audits, risk summaries, and AML compliance logs.</p>
+            <div style={{ marginTop: "8px", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+              Your Role: <strong style={{ color: canGenerateReports ? "#3b82f6" : "#10b981" }}>{user?.role}</strong>
+              {canGenerateReports ? " - Can generate reports" : " - View only access"}
+            </div>
           </div>
-          <button 
-            className="btn btn-primary" 
-            onClick={generateReport}
-            disabled={generating}
-          >
-            {generating ? "Generating..." : "Generate Security Audit"}
-          </button>
+          {canGenerateReports && (
+            <button 
+              className="btn btn-primary" 
+              onClick={generateReport}
+              disabled={generating}
+            >
+              {generating ? "Generating..." : "Generate Security Audit"}
+            </button>
+          )}
         </div>
 
         {/* System Health Section */}
@@ -137,13 +153,15 @@ function Reports() {
                     >
                       Download {report.file_type}
                     </button>
-                    <button 
-                      className="btn btn-secondary" 
-                      onClick={() => deleteReport(report.id)}
-                      style={{ padding: "8px 12px", fontSize: "0.8rem", color: "var(--status-fraud)", borderColor: "rgba(244,63,94,0.2)" }}
-                    >
-                      Delete
-                    </button>
+                    {canGenerateReports && (
+                      <button 
+                        className="btn btn-secondary" 
+                        onClick={() => deleteReport(report.id)}
+                        style={{ padding: "8px 12px", fontSize: "0.8rem", color: "var(--status-fraud)", borderColor: "rgba(244,63,94,0.2)" }}
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                 </div>
               ))

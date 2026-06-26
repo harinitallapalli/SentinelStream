@@ -12,7 +12,7 @@ from app.database.session import get_db
 from app.models.report import SystemReport
 from app.models.transaction import Transaction
 from app.models.fraud_alert import FraudAlert
-from app.utils.auth import get_current_user, RoleChecker
+from app.utils.auth import get_current_user, require_analyst_or_admin, require_viewer_or_above
 from app.models.user import User
 
 router = APIRouter()
@@ -131,7 +131,7 @@ def generate_actual_csv(filename: str, transactions: list):
 @router.get("/")
 async def list_reports(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_viewer_or_above())
 ):
     result = await db.execute(select(SystemReport).order_by(SystemReport.id.desc()))
     reports = result.scalars().all()
@@ -174,7 +174,7 @@ async def list_reports(
 @router.post("/generate")
 async def generate_report(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(RoleChecker(["Admin", "Analyst"]))
+    current_user: User = Depends(require_analyst_or_admin())
 ):
     # Fetch live statistics
     tx_result = await db.execute(select(Transaction))
@@ -243,7 +243,7 @@ async def generate_report(
 async def download_report(
     report_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_viewer_or_above())
 ):
     result = await db.execute(select(SystemReport).filter(SystemReport.id == report_id))
     report = result.scalars().first()
@@ -297,7 +297,7 @@ async def download_report(
 async def delete_report(
     report_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(RoleChecker(["Admin", "Analyst"]))
+    current_user: User = Depends(require_analyst_or_admin())
 ):
     result = await db.execute(select(SystemReport).filter(SystemReport.id == report_id))
     report = result.scalars().first()

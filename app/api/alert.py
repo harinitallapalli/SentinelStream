@@ -7,7 +7,7 @@ from datetime import datetime
 
 from app.database.db import get_db
 from app.models.fraud_alert import FraudAlert
-from app.utils.auth import get_current_user, RoleChecker
+from app.utils.auth import get_current_user, require_analyst_or_admin, require_admin, require_viewer_or_above
 from app.models.user import User
 
 router = APIRouter()
@@ -68,7 +68,7 @@ async def websocket_endpoint(websocket: WebSocket):
 @router.get("/")
 async def get_alerts(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_viewer_or_above())
 ):
     result = await db.execute(
         select(FraudAlert).order_by(FraudAlert.id.desc())
@@ -84,7 +84,7 @@ async def resolve_alert(
     alert_id: int,
     payload: ResolveAlertRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(RoleChecker(["Admin", "Analyst"]))
+    current_user: User = Depends(require_analyst_or_admin())
 ):
     result = await db.execute(
         select(FraudAlert).filter(FraudAlert.id == alert_id)
@@ -108,7 +108,7 @@ async def resolve_alert(
 async def resolve_multiple_alerts(
     request: BulkResolveRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(RoleChecker(["Admin", "Analyst"]))
+    current_user: User = Depends(require_analyst_or_admin())
 ):
     if not request.alert_ids:
         return {"message": "No alert IDs provided"}

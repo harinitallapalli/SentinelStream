@@ -83,3 +83,34 @@ class RoleChecker:
                 detail=f"Operation not permitted for role: {current_user.role}. Requires one of: {', '.join(self.allowed_roles)}"
             )
         return current_user
+
+
+# Role-based access control helpers
+def require_admin():
+    """Require Admin role."""
+    return RoleChecker(["Admin"])
+
+
+def require_analyst_or_admin():
+    """Require Analyst or Admin role."""
+    return RoleChecker(["Analyst", "Admin"])
+
+
+def require_viewer_or_above():
+    """Require Viewer, Analyst, or Admin role (all authenticated users)."""
+    return RoleChecker(["Viewer", "Analyst", "Admin"])
+
+
+def get_user_role_hierarchy() -> dict:
+    """Return role hierarchy for permission checks."""
+    return {
+        "Viewer": 1,
+        "Analyst": 2,
+        "Admin": 3
+    }
+
+
+def has_higher_or_equal_role(user_role: str, required_role: str) -> bool:
+    """Check if user has higher or equal role in hierarchy."""
+    hierarchy = get_user_role_hierarchy()
+    return hierarchy.get(user_role, 0) >= hierarchy.get(required_role, 0)

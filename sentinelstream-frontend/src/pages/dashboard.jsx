@@ -23,7 +23,7 @@ import { generatePDFReport } from "../utils/pdfGenerator";
 import { useAuth } from "../context/AuthContext.jsx";
 
 function Dashboard() {
-  const { user } = useAuth();
+  const { user, canCreateTransactions } = useAuth();
   const [stats, setStats] = useState({});
   const [dashboardOverview, setDashboardOverview] = useState({});
   const [transactions, setTransactions] = useState([]);
@@ -168,6 +168,10 @@ function Dashboard() {
             <p className="eyebrow">SentinelStream Fraud Detection System</p>
             <h1>Dashboard</h1>
             <p className="page-description">Real-time monitoring, alerts, and transaction analytics in one central console.</p>
+            <div style={{ marginTop: "8px", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+              Your Role: <strong style={{ color: canCreateTransactions ? "#3b82f6" : "#10b981" }}>{user?.role}</strong>
+              {canCreateTransactions ? " - Can create transactions" : " - View only access"}
+            </div>
           </div>
           <div className="dashboard-actions">
             <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "white", padding: "8px 12px", borderRadius: "16px", border: "1px solid #e2e8f0" }} className="dark-mode-card-nested">
@@ -413,7 +417,7 @@ function Dashboard() {
           </div>
         </div>
 
-        {(user?.role === "Admin" || user?.role === "Analyst") && (
+        {canCreateTransactions && (
           <div className="form-card create-transaction-card">
             <h2>Create Transaction</h2>
             <form onSubmit={createTransaction} className="create-form">

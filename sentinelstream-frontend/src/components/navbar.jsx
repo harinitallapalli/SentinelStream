@@ -52,9 +52,23 @@ function Navbar() {
           {theme === "light" ? "🌙" : "☀️"}
         </button>
         <button className="icon-button" type="button">🔔</button>
-        <span className="admin-badge" style={{ background: user?.role === "Admin" ? "#ef4444" : user?.role === "Analyst" ? "#3b82f6" : "#10b981" }}>
-          {user?.role || "Viewer"}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Logged in as:</span>
+          <span 
+            className="admin-badge" 
+            style={{ 
+              background: user?.role === "Admin" ? "#ef4444" : user?.role === "Analyst" ? "#3b82f6" : "#10b981",
+              padding: "6px 12px",
+              fontSize: "0.85rem",
+              fontWeight: "bold",
+              borderRadius: "8px",
+              minWidth: "80px",
+              textAlign: "center"
+            }}
+          >
+            {user?.role || "Viewer"}
+          </span>
+        </div>
       </div>
     </div>
   );

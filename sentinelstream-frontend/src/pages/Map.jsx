@@ -1,20 +1,30 @@
 import { useEffect, useState } from "react";
+import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from "react-leaflet";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 
+// Fix for default marker icons in Leaflet with React
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+});
+
+// Location coordinates for major cities/regions
 const locationCoords = {
-  "darkweb": { x: 500, y: 220 },
-  "foreign proxy": { x: 350, y: 280 },
-  "foreign ip": { x: 350, y: 280 },
-  "london": { x: 480, y: 120 },
-  "northeast us": { x: 280, y: 140 },
-  "new york": { x: 280, y: 140 },
-  "southwest asia": { x: 560, y: 160 },
-  "delhi": { x: 580, y: 180 },
-  "mumbai": { x: 570, y: 200 },
-  "bangalore": { x: 575, y: 210 },
-  "tokyo": { x: 760, y: 140 },
-  "sydney": { x: 800, y: 340 }
+  "new york": [40.7128, -74.0060],
+  "london": [51.5074, -0.1278],
+  "delhi": [28.7041, 77.1025],
+  "mumbai": [19.0760, 72.8777],
+  "bangalore": [12.9716, 77.5946],
+  "tokyo": [35.6762, 139.6503],
+  "sydney": [-33.8688, 151.2093],
+  "darkweb": [0, 0], // Will be randomized
+  "foreign": [20, 0], // Will be randomized
+  "unknown": [10, 10], // Will be randomized
 };
 
 function Map() {
@@ -27,28 +37,44 @@ function Map() {
   ]);
 
   const [markers, setMarkers] = useState([
-    { id: 1, x: 280, y: 140, priority: "HIGH" },
-    { id: 2, x: 480, y: 120, priority: "MEDIUM" },
-    { id: 3, x: 560, y: 160, priority: "HIGH" },
-    { id: 4, x: 720, y: 130, priority: "MEDIUM" }
+    { id: 1, position: [40.7128, -74.0060], priority: "HIGH", location: "New York" },
+    { id: 2, position: [51.5074, -0.1278], priority: "MEDIUM", location: "London" },
+    { id: 3, position: [28.7041, 77.1025], priority: "HIGH", location: "Delhi" },
+    { id: 4, position: [35.6762, 139.6503], priority: "MEDIUM", location: "Tokyo" }
   ]);
 
+  const getCoordinates = (location) => {
+    const locLower = location.toLowerCase();
+    
+    // Check for exact matches
+    for (const [key, coords] of Object.entries(locationCoords)) {
+      if (locLower.includes(key)) {
+        return coords;
+      }
+    }
+    
+    // Generate random coordinates for unknown locations
+    const lat = (Math.random() * 140) - 70; // Between -70 and 70
+    const lng = (Math.random() * 360) - 180; // Between -180 and 180
+    return [lat, lng];
+  };
+
   useEffect(() => {
-    // 1. Establish live WebSockets stream
+    // Establish live WebSockets stream
     const ws = new WebSocket("ws://127.0.0.1:8000/alerts/ws");
+    
+    ws.onopen = () => {
+      console.log("WebSocket connected for map");
+    };
     
     ws.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data);
+        console.log("Map WebSocket message:", message);
+        
         if (message.type === "NEW_ALERT") {
           const loc = message.transaction.location;
-          const locClean = loc.toLowerCase().trim();
-          
-          // Map to coordinates or generate dynamic fallback based on name hash
-          const coord = locationCoords[locClean] || {
-            x: 200 + (locClean.charCodeAt(0) * 7) % 550,
-            y: 100 + (locClean.charCodeAt(1 || 0) * 5) % 250
-          };
+          const coords = getCoordinates(loc);
 
           const newFeed = {
             id: `TX${message.transaction.id}`,
@@ -70,18 +96,33 @@ function Map() {
             return [newFeed, ...updated.slice(0, 4)];
           });
 
-          // Add interactive threat map marker
+          // Add map marker
           setMarkers(prev => [
-            { id: Date.now(), x: coord.x, y: coord.y, priority: message.alert.priority },
-            ...prev.slice(0, 7) // Keep latest 8 threat markers active
+            { 
+              id: Date.now(), 
+              position: coords, 
+              priority: message.alert.priority,
+              location: loc,
+              transactionId: message.transaction.id,
+              amount: message.transaction.amount
+            },
+            ...prev.slice(0, 15) // Keep latest 16 markers
           ]);
         }
       } catch (e) {
         console.error("Error reading map WS feed:", e);
       }
     };
+    
+    ws.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
+    
+    ws.onclose = () => {
+      console.log("WebSocket disconnected");
+    };
 
-    // 2. Periodic timer to update timestamps on feeds (e.g. 1m ago -> 2m ago)
+    // Periodic timer to update timestamps
     const timer = setInterval(() => {
       setLiveFeeds(prev => prev.map(f => {
         if (f.time === "Just now") return { ...f, time: "1m ago" };
@@ -99,6 +140,10 @@ function Map() {
     };
   }, []);
 
+  const getMarkerColor = (priority) => {
+    return priority === "HIGH" ? "#ef4444" : "#f59e0b";
+  };
+
   return (
     <div className="app-layout">
       <Sidebar />
@@ -114,53 +159,46 @@ function Map() {
         </div>
 
         <div className="dashboard-row">
-          <div className="map-world-container" style={{ minHeight: "440px" }}>
-            <svg viewBox="0 0 1000 480" width="100%" height="100%" style={{ background: "transparent" }}>
-              {/* Stylized high tech world grid */}
-              <defs>
-                <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                  <path d="M 20 0 L 0 0 0 20" fill="none" stroke="var(--map-grid)" strokeWidth="1" />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#grid)" />
-
-              {/* Stylized world maps vector outlines */}
-              {/* North America */}
-              <path d="M150,100 L250,90 L320,120 L300,180 L250,220 L220,190 L160,170 Z" fill="var(--map-land-bg)" stroke="var(--map-land-stroke)" strokeWidth="1" />
-              {/* South America */}
-              <path d="M280,240 L340,260 L360,320 L340,420 L310,400 L280,300 Z" fill="var(--map-land-bg)" stroke="var(--map-land-stroke)" strokeWidth="1" />
-              {/* Eurasia / Africa */}
-              <path d="M440,120 L550,80 L720,100 L850,120 L800,240 L680,280 L580,240 L480,180 Z" fill="var(--map-land-bg)" stroke="var(--map-land-stroke)" strokeWidth="1" />
-              {/* Africa */}
-              <path d="M450,200 L530,210 L560,280 L520,380 L470,320 L440,240 Z" fill="var(--map-land-bg)" stroke="var(--map-land-stroke)" strokeWidth="1" />
-              {/* Australia */}
-              <path d="M740,300 L820,310 L810,360 L730,340 Z" fill="var(--map-land-bg)" stroke="var(--map-land-stroke)" strokeWidth="1" />
-
-              {/* Connections / Attack vectors */}
-              <path d="M280,140 Q400,100 480,120" fill="none" stroke="var(--map-vector)" strokeWidth="1.5" strokeDasharray="5,5" />
-              <path d="M560,160 Q660,120 720,130" fill="none" stroke="var(--map-vector)" strokeWidth="1.5" strokeDasharray="5,5" />
-              <path d="M510,260 Q420,200 320,150" fill="none" stroke="var(--map-vector)" strokeWidth="1.5" strokeDasharray="5,5" />
-
-              {/* Threat Hotspots - Pulsing rings mapped from state */}
+          <div className="table-card" style={{ padding: "0", minHeight: "500px", overflow: "hidden" }}>
+            <MapContainer 
+              center={[20, 0]} 
+              zoom={2} 
+              style={{ height: "500px", width: "100%" }}
+              zoomControl={true}
+            >
+              <TileLayer
+                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+              />
+              
               {markers.map((marker) => (
-                <g key={marker.id} transform={`translate(${marker.x}, ${marker.y})`}>
-                  <circle r="18" className="map-glow-ring" style={{ stroke: marker.priority === "HIGH" ? "#ef4444" : "#f59e0b" }} />
-                  <circle r="4" className="map-glow-point" style={{ fill: marker.priority === "HIGH" ? "#ef4444" : "#f59e0b" }} />
-                </g>
+                <CircleMarker
+                  key={marker.id}
+                  center={marker.position}
+                  radius={8}
+                  pathOptions={{
+                    color: getMarkerColor(marker.priority),
+                    fillColor: getMarkerColor(marker.priority),
+                    fillOpacity: 0.7,
+                    weight: 2
+                  }}
+                >
+                  <Popup>
+                    <div style={{ minWidth: "200px" }}>
+                      <strong>Transaction #{marker.transactionId || marker.id}</strong>
+                      <br />
+                      Location: {marker.location}
+                      <br />
+                      Amount: ₹{marker.amount?.toLocaleString() || "N/A"}
+                      <br />
+                      Priority: <span style={{ color: getMarkerColor(marker.priority), fontWeight: "bold" }}>
+                        {marker.priority}
+                      </span>
+                    </div>
+                  </Popup>
+                </CircleMarker>
               ))}
-            </svg>
-
-            {/* Map Legend */}
-            <div style={{ position: "absolute", bottom: "16px", left: "16px", display: "flex", gap: "16px", background: "rgba(10,12,28,0.85)", padding: "10px 16px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.08)" }}>
-              <span style={{ fontSize: "0.75rem", display: "flex", alignItems: "center", gap: "6px" }}>
-                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#f43f5e" }}></span>
-                Fraud Source
-              </span>
-              <span style={{ fontSize: "0.75rem", display: "flex", alignItems: "center", gap: "6px" }}>
-                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#f59e0b" }}></span>
-                High Risk Area
-              </span>
-            </div>
+            </MapContainer>
           </div>
 
           {/* High Risk Regions and Live Feeds sidebar */}
