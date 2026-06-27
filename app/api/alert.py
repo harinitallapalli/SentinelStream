@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from pydantic import BaseModel
@@ -9,6 +9,7 @@ from app.database.db import get_db
 from app.models.fraud_alert import FraudAlert
 from app.utils.auth import get_current_user, require_analyst_or_admin, require_admin, require_viewer_or_above
 from app.models.user import User
+from app.services.audit_service import AuditService
 
 router = APIRouter()
 
@@ -83,6 +84,7 @@ async def get_alerts(
 async def resolve_alert(
     alert_id: int,
     payload: ResolveAlertRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_analyst_or_admin())
 ):
@@ -101,12 +103,30 @@ async def resolve_alert(
     
     await db.commit()
     await db.refresh(alert)
+    
+    # Log alert resolution
+    await AuditService.log_action(
+        db=db,
+        action="RESOLVE",
+        user=current_user,
+        resource_type="ALERT",
+        resource_id=str(alert_id),
+        details={
+            "transaction_id": alert.transaction_id,
+            "review_notes": payload.review_notes,
+            "reason_code": payload.reason_code
+        },
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent")
+    )
+    
     return {"message": "Alert resolved", "alert": alert}
 
 
 @router.post("/resolve-multiple")
 async def resolve_multiple_alerts(
     request: BulkResolveRequest,
+    http_request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_analyst_or_admin())
 ):
@@ -126,6 +146,23 @@ async def resolve_multiple_alerts(
         )
     )
     await db.commit()
+    
+    # Log bulk alert resolution
+    await AuditService.log_action(
+        db=db,
+        action="BULK_RESOLVE",
+        user=current_user,
+        resource_type="ALERT",
+        details={
+            "alert_ids": request.alert_ids,
+            "review_notes": request.review_notes,
+            "reason_code": request.reason_code,
+            "count": len(request.alert_ids)
+        },
+        ip_address=http_request.client.host if http_request.client else None,
+        user_agent=http_request.headers.get("user-agent")
+    )
+    
     return {"message": f"Successfully resolved {len(request.alert_ids)} alerts"}
 
 

@@ -10,6 +10,7 @@ import Analytics from "./pages/Analytics";
 import Map from "./pages/Map";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import AuditLogs from "./pages/AuditLogs";
 
 function ProtectedRoute({ children, allowedRoles }) {
   const { isAuthenticated, user, loading } = useAuth();
@@ -43,6 +44,7 @@ function App() {
         <Route path="/map" element={<ProtectedRoute><Map /></ProtectedRoute>} />
         <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute allowedRoles={["Admin"]}><Settings /></ProtectedRoute>} />
+        <Route path="/audit-logs" element={<ProtectedRoute allowedRoles={["Admin"]}><AuditLogs /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );

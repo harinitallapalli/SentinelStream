@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -9,6 +9,7 @@ from app.schemas.transaction import TransactionCreate
 from app.services.fraud_service import check_fraud
 from app.utils.auth import get_current_user, require_analyst_or_admin, require_admin, require_viewer_or_above
 from app.models.user import User
+from app.services.audit_service import AuditService
 
 router = APIRouter()
 
@@ -16,6 +17,7 @@ router = APIRouter()
 @router.post("/")
 async def create_transaction(
     transaction: TransactionCreate,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_analyst_or_admin())
 ):
@@ -51,6 +53,23 @@ async def create_transaction(
     db.add(new_transaction)
     await db.commit()
     await db.refresh(new_transaction)
+    
+    # Log transaction creation
+    await AuditService.log_action(
+        db=db,
+        action="CREATE",
+        user=current_user,
+        resource_type="TRANSACTION",
+        resource_id=str(new_transaction.id),
+        details={
+            "user_id": transaction.user_id,
+            "amount": transaction.amount,
+            "location": transaction.location,
+            "status": status
+        },
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent")
+    )
 
     if status in ["FRAUD", "HIGH_RISK"]:
         priority = "HIGH" if status == "HIGH_RISK" else "MEDIUM"

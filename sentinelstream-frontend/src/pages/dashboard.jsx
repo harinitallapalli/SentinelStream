@@ -163,34 +163,23 @@ function Dashboard() {
       <div className="main-content">
         <Navbar />
 
-        <div className="dashboard-header">
+        <div className="page-header">
           <div>
             <p className="eyebrow">SentinelStream Fraud Detection System</p>
             <h1>Dashboard</h1>
             <p className="page-description">Real-time monitoring, alerts, and transaction analytics in one central console.</p>
             <div style={{ marginTop: "8px", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-              Your Role: <strong style={{ color: canCreateTransactions ? "#3b82f6" : "#10b981" }}>{user?.role}</strong>
+              Your Role: <strong style={{ color: canCreateTransactions ? "var(--primary)" : "var(--success)" }}>{user?.role}</strong>
               {canCreateTransactions ? " - Can create transactions" : " - View only access"}
             </div>
           </div>
           <div className="dashboard-actions">
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "white", padding: "8px 12px", borderRadius: "16px", border: "1px solid #e2e8f0" }} className="dark-mode-card-nested">
-              <span className="live-dot-container" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span className={`live-dot ${refreshInterval > 0 ? "active" : ""}`} style={{
-                  width: "8px",
-                  height: "8px",
-                  borderRadius: "50%",
-                  backgroundColor: refreshInterval > 0 ? "#10b981" : "#94a3b8",
-                  display: "inline-block",
-                  boxShadow: refreshInterval > 0 ? "0 0 8px #10b981" : "none",
-                  animation: refreshInterval > 0 ? "pulse 1.5s infinite" : "none"
-                }}></span>
-                <span style={{ fontSize: "0.85rem", color: "#64748b" }}>Auto Refresh:</span>
-              </span>
+            <div className="auto-refresh-control">
+              <span className={`live-dot ${refreshInterval > 0 ? "active" : ""}`}></span>
+              <span>Auto Refresh:</span>
               <select 
                 value={refreshInterval} 
                 onChange={(e) => setRefreshInterval(Number(e.target.value))}
-                style={{ border: "none", background: "transparent", fontSize: "0.85rem", fontWeight: "bold", padding: "0 4px", cursor: "pointer", color: "#0f172a" }}
               >
                 <option value="0">Off</option>
                 <option value="5">5s</option>

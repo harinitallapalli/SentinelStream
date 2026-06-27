@@ -98,6 +98,13 @@ function Sidebar() {
           </NavLink>
         )}
 
+        {user?.role === "Admin" && (
+          <NavLink className={({ isActive }) => (isActive ? "sidebar-link active" : "sidebar-link")} to="/audit-logs">
+            <span>📋</span>
+            Audit Logs
+          </NavLink>
+        )}
+
         <NavLink className="sidebar-link" to="/" onClick={logout}>
           <span>⇦</span>
           Logout

@@ -3,6 +3,7 @@ from sqlalchemy import text, select
 from app.database.db import engine
 from app.database.session import SessionLocal
 from app.models.user import Base, User
+from app.models.audit_log import AuditLog
 from app.utils.auth import get_password_hash
 
 async def run_migrations():

@@ -6,6 +6,7 @@ from app.api.stats import router as stats_router
 from app.api.dashboard import router as dashboard_router
 from app.api.settings import router as settings_router
 from app.api.reports import router as reports_router
+from app.api.audit import router as audit_router
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="SentinelStream")
@@ -57,6 +58,10 @@ app.include_router(
     reports_router,
     prefix="/reports",
     tags=["Reports"]
+)
+app.include_router(
+    audit_router,
+    tags=["Audit Logs"]
 )
 
 @app.get("/")
